@@ -85,7 +85,7 @@ export default function ModernNavbar() {
   }
 
   const handlePaperClick = (paperId: string) => {
-    navigate(`/exam-paper/${paperId}`)
+    navigate(`/exam-papers/${paperId}`)
     setIsGradesDropdownOpen(false)
     setIsMobileMenuOpen(false)
   }
