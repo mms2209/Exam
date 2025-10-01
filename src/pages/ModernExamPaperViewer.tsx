@@ -14,6 +14,7 @@ export default function ModernExamPaperViewer() {
   const navigate = useNavigate()
 
   const [paper, setPaper] = useState<ExamPaperWithSubject | null>(null)
+  const [paperUrl, setPaperUrl] = useState<string>('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -75,6 +76,10 @@ export default function ModernExamPaperViewer() {
           ...data,
           subject: data.subject
         })
+
+        // Get signed URL for the PDF
+        const url = await getPaperUrl(data.paper_file_url)
+        setPaperUrl(url)
       }
     } catch (err: any) {
       console.error('Error fetching paper:', err)
@@ -241,10 +246,18 @@ export default function ModernExamPaperViewer() {
     }
   }
 
-  const getPaperUrl = (fileUrl: string) => {
+  const getPaperUrl = async (fileUrl: string) => {
     const bucketName = 'exam-papers'
-    const { data } = supabase.storage.from(bucketName).getPublicUrl(fileUrl)
-    return data.publicUrl
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .createSignedUrl(fileUrl, 3600)
+
+    if (error) {
+      console.error('Error creating signed URL:', error)
+      return ''
+    }
+
+    return data?.signedUrl || ''
   }
 
   const groupChatSessionsBySubject = () => {
@@ -418,7 +431,7 @@ export default function ModernExamPaperViewer() {
           } ${viewMode === 'both' ? 'lg:flex' : ''}`}>
             <iframe
               ref={pdfViewerRef}
-              src={getPaperUrl(paper.paper_file_url)}
+              src={paperUrl}
               className="w-full h-full border-0"
               title="Exam Paper PDF"
             />
