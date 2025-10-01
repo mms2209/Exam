@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { examPapersApi } from '../lib/dataFetching'
-import { Upload, Trash2, FileText, BookOpen, AlertCircle } from 'lucide-react'
+import { Upload, Trash2, FileText, BookOpen, AlertCircle, CheckCircle, Clock, XCircle, RefreshCw } from 'lucide-react'
 import type { ExamPaperWithSubject } from '../types/examPapers'
 
 export function AdminExamPapers() {
@@ -53,9 +53,15 @@ export function AdminExamPapers() {
 
       queryClient.invalidateQueries({ queryKey: ['exam-papers'] })
 
-      examPapersApi.extractPDFText(uploadedPaper.id).catch(error => {
-        console.error('PDF extraction failed:', error)
-      })
+      examPapersApi.extractPDFText(uploadedPaper.id)
+        .then(() => {
+          console.log('PDF extraction started successfully for paper:', uploadedPaper.id)
+          queryClient.invalidateQueries({ queryKey: ['exam-papers'] })
+        })
+        .catch(error => {
+          console.error('PDF extraction failed:', error)
+          alert(`Warning: Paper uploaded successfully, but PDF text extraction failed: ${error.message}. You can retry extraction later.`)
+        })
 
       setPaperFile(null)
       setMarkingSchemeFile(null)
@@ -73,6 +79,49 @@ export function AdminExamPapers() {
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this exam paper?')) {
       deleteMutation.mutate(id)
+    }
+  }
+
+  const handleRetryExtraction = async (paperId: string) => {
+    try {
+      await examPapersApi.extractPDFText(paperId)
+      queryClient.invalidateQueries({ queryKey: ['exam-papers'] })
+      alert('PDF extraction started. This may take a few moments.')
+    } catch (error: any) {
+      alert(`Failed to start extraction: ${error.message}`)
+    }
+  }
+
+  const getExtractionStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Extracted
+          </span>
+        )
+      case 'processing':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <Clock className="h-3 w-3 mr-1" />
+            Processing
+          </span>
+        )
+      case 'failed':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <XCircle className="h-3 w-3 mr-1" />
+            Failed
+          </span>
+        )
+      default:
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            <Clock className="h-3 w-3 mr-1" />
+            Pending
+          </span>
+        )
     }
   }
 
@@ -232,6 +281,9 @@ export function AdminExamPapers() {
                   Title
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Extraction Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Uploaded
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -242,7 +294,7 @@ export function AdminExamPapers() {
             <tbody className="bg-white divide-y divide-gray-200">
               {examPapers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                     <BookOpen className="h-12 w-12 mx-auto mb-3 text-gray-400" />
                     <p className="text-sm">No exam papers uploaded yet</p>
                   </td>
@@ -267,16 +319,31 @@ export function AdminExamPapers() {
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {paper.title || '-'}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getExtractionStatusBadge(paper.text_extraction_status)}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(paper.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleDelete(paper.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        {(paper.text_extraction_status === 'failed' || paper.text_extraction_status === 'pending') && (
+                          <button
+                            onClick={() => handleRetryExtraction(paper.id)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Retry extraction"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDelete(paper.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete paper"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

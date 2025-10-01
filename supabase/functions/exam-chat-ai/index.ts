@@ -46,6 +46,11 @@ Deno.serve(async (req: Request) => {
 
     const { question, paperContent, markingSchemeContent }: ChatRequest = await req.json();
 
+    console.log('[exam-chat-ai] Received request');
+    console.log('[exam-chat-ai] Question:', question);
+    console.log('[exam-chat-ai] Paper content length:', paperContent?.length || 0);
+    console.log('[exam-chat-ai] Marking scheme content length:', markingSchemeContent?.length || 0);
+
     if (!question) {
       return new Response(
         JSON.stringify({ error: "Question is required" }),
@@ -79,6 +84,12 @@ Deno.serve(async (req: Request) => {
       ],
     });
 
+    const hasPaperContent = paperContent && paperContent.length > 100;
+    const hasMarkingScheme = markingSchemeContent && markingSchemeContent.length > 100;
+
+    console.log('[exam-chat-ai] Has paper content:', hasPaperContent);
+    console.log('[exam-chat-ai] Has marking scheme:', hasMarkingScheme);
+
     const prompt = `You are an expert exam tutor helping students understand exam questions and how to answer them effectively.
 
 ${paperContent || "No paper content provided"}
@@ -87,29 +98,38 @@ ${markingSchemeContent || "No marking scheme provided"}
 
 The student is asking: "${question}"
 
+${hasPaperContent ? 'IMPORTANT: You have been provided with the complete exam paper content above. Read through it carefully and reference specific questions, sections, or content from the paper in your response.' : 'Note: The exam paper content is not available. Provide general educational guidance.'}
+
+${hasMarkingScheme ? 'IMPORTANT: You have been provided with the marking scheme above. Use it to provide accurate guidance on how marks are awarded and what examiners are looking for.' : 'Note: The marking scheme is not available. Provide general best practices for answering such questions.'}
+
 Your task is to help the student understand this question and how to answer it correctly. Please provide a comprehensive educational response in the following structured format:
 
 ## Explanation
-Provide a clear explanation of what the question is asking and the key concepts involved. Break down the question into understandable parts.
+Provide a clear explanation of what the question is asking and the key concepts involved. Break down the question into understandable parts. ${hasPaperContent ? 'Reference the specific question from the exam paper.' : ''}
 
 ## Examples
 Provide 2-3 relevant, concrete examples that illustrate the concepts or demonstrate similar problems and their solutions.
 
 ## How to Get Full Marks
-Provide clear bullet points on exactly what a student needs to include in their answer to achieve full marks. Focus on:
+Provide clear bullet points on exactly what a student needs to include in their answer to achieve full marks. ${hasMarkingScheme ? 'Base this on the marking scheme provided.' : 'Provide general best practices.'} Focus on:
 - Key points that must be mentioned
 - Important terminology to use
 - Common mistakes to avoid
 - How to structure the answer
 
 ## Solution
-Provide a complete, well-structured solution or answer to the question that demonstrates best practices and would receive full marks.
+Provide a complete, well-structured solution or answer to the question that demonstrates best practices and would receive full marks. ${hasMarkingScheme ? 'Align your solution with the marking scheme criteria.' : ''}
 
-IMPORTANT: Format your response using these exact headings. Be specific, educational, and helpful. If you need clarification about the question, explain what information would be helpful and provide the best guidance you can with the available context.`;
+IMPORTANT: Format your response using these exact headings. Be specific, educational, and helpful. ${hasPaperContent ? 'Make sure to demonstrate that you have read and understood the exam paper by referencing specific content from it.' : ''} If you need clarification about the question, explain what information would be helpful and provide the best guidance you can with the available context.`;
+
+    console.log('[exam-chat-ai] Sending prompt to AI model...');
+    console.log('[exam-chat-ai] Prompt length:', prompt.length);
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
+
+    console.log('[exam-chat-ai] Received AI response, length:', text.length);
 
     const parsedResponse = parseAIResponse(text);
 

@@ -55,6 +55,10 @@ export function ExamPaperViewer() {
 
       const paperWithText = await examPapersApi.getExamPaperWithText(paperId!)
 
+      console.log('[ExamPaperViewer] Paper text extraction status:', paperWithText.text_extraction_status)
+      console.log('[ExamPaperViewer] Paper extracted text length:', paperWithText.paper_extracted_text?.length || 0)
+      console.log('[ExamPaperViewer] Marking scheme extracted text length:', paperWithText.marking_scheme_extracted_text?.length || 0)
+
       let paperContent = ''
       let markingSchemeContent = ''
 
@@ -114,6 +118,16 @@ Note: PDF text extraction failed. The AI will provide general educational guidan
 Error: ${paperWithText.extraction_error || 'Unknown error'}
 `
         markingSchemeContent = 'PDF text could not be extracted. Providing general educational guidance.'
+      }
+
+      console.log('[ExamPaperViewer] Sending to AI - Paper content length:', paperContent.length)
+      console.log('[ExamPaperViewer] Sending to AI - Marking scheme content length:', markingSchemeContent.length)
+
+      if (!paperContent || paperContent.length < 100) {
+        console.warn('[ExamPaperViewer] WARNING: Paper content is empty or very short!')
+      }
+      if (!markingSchemeContent || markingSchemeContent.length < 100) {
+        console.warn('[ExamPaperViewer] WARNING: Marking scheme content is empty or very short!')
       }
 
       const response = await examPapersApi.sendChatMessage({
@@ -244,12 +258,76 @@ Error: ${paperWithText.extraction_error || 'Unknown error'}
         </div>
 
         <div className="bg-white shadow-sm rounded-lg border border-gray-200 flex flex-col">
-          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center">
-            <MessageSquare className="h-5 w-5 text-gray-600 mr-2" />
-            <span className="font-medium text-gray-900">AI Tutor</span>
+          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+            <div className="flex items-center">
+              <MessageSquare className="h-5 w-5 text-gray-600 mr-2" />
+              <span className="font-medium text-gray-900">AI Tutor</span>
+            </div>
+            {paper && (
+              <div className="flex items-center gap-2 text-xs">
+                {paper.text_extraction_status === 'completed' && (
+                  <span className="flex items-center text-green-700">
+                    <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Content ready
+                  </span>
+                )}
+                {paper.text_extraction_status === 'processing' && (
+                  <span className="flex items-center text-blue-700">
+                    <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Extracting content...
+                  </span>
+                )}
+                {(paper.text_extraction_status === 'pending' || paper.text_extraction_status === 'failed') && (
+                  <span className="flex items-center text-amber-700">
+                    <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Limited content
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex-1 overflow-auto p-4 space-y-4">
+            {paper && (paper.text_extraction_status === 'pending' || paper.text_extraction_status === 'processing') && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-blue-800 font-medium">
+                      {paper.text_extraction_status === 'processing' ? 'PDF Content Extraction in Progress' : 'PDF Content Not Yet Extracted'}
+                    </p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      {paper.text_extraction_status === 'processing'
+                        ? 'The exam paper and marking scheme are being processed. The AI can still help, but responses will be more accurate once extraction completes.'
+                        : 'The exam paper content has not been extracted yet. The AI will provide general guidance until the content is available.'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {paper && paper.text_extraction_status === 'failed' && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-amber-800 font-medium">Content Extraction Failed</p>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Unable to extract text from the PDF files. The AI will provide general educational guidance, but won't have access to the specific paper content.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {errorMessage && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
