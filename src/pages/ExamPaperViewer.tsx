@@ -15,7 +15,7 @@ export function ExamPaperViewer() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const { data: paper, isLoading: paperLoading } = useQuery({
-    queryKey: ['exam-paper', paperId],
+    queryKey: ['exam-papers', paperId],
     queryFn: () => examPapersApi.getExamPaperById(paperId!),
     enabled: !!paperId
   })
