@@ -41,10 +41,38 @@ A comprehensive full-stack web application for Islamic finance operations with r
      - `VITE_SUPABASE_URL`: Your Supabase project URL
      - `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
 
-3. **Set up Supabase**:
-   - Click "Connect to Supabase" button in the top right
-   - The database schema will be created automatically via migrations
-   - Edge functions are deployed automatically
+3. **Set up Supabase Database**:
+
+   a. **Apply Database Migrations**:
+      - Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+      - Select your project
+      - Navigate to **SQL Editor**
+      - Copy and paste the contents of each migration file from `supabase/migrations/` in order:
+        1. `20250813174450_damp_paper.sql`
+        2. `20250813175658_icy_smoke.sql`
+        3. `20250814113503_raspy_mouse.sql`
+        4. `20250826100303_Policies.sql`
+        5. `20250828140302_misty_meadow.sql`
+        6. `20250828162140_red_manor.sql`
+        7. `20250901082033_teal_snowflake.sql`
+        8. `20251001075316_fix_is_admin_function_for_user_roles.sql`
+        9. `20251001075353_create_admin_user_account.sql`
+        10. `20251001100000_add_exam_papers_permissions.sql`
+        11. `20251001120000_add_pdf_text_extraction_columns.sql`
+        12. `20251001130000_create_exam_papers_system.sql` (NEW - Creates exam tables)
+      - Execute each migration in order
+
+   b. **Create Storage Buckets**:
+      - Navigate to **Storage** in your Supabase Dashboard
+      - Create two buckets:
+        - `exam-papers` (Private, 10MB limit, PDF only)
+        - `marking-schemes` (Private, 10MB limit, PDF only)
+      - Apply storage policies (see `STORAGE_SETUP.md` for detailed instructions)
+
+   c. **Verify Setup**:
+      - Confirm all tables exist in the Database → Tables view
+      - Verify storage buckets are created
+      - Check that RLS policies are enabled on all tables
 
 4. **Configure AI Tutor (Required for Exam Chat Feature)**:
 
@@ -130,17 +158,26 @@ Helper functions for permission checking:
 
 ## Database Schema
 
-### Tables
+### Authentication & Authorization Tables
 - `users`: User profiles with roles and permissions
 - `roles`: System roles (admin, member, viewer)
 - `permissions`: Granular permissions system
 - `role_permissions`: Role-permission relationships
+- `user_roles`: User-role assignments
+
+### Exam Papers Tables
+- `exam_subjects`: Subject definitions (Mathematics, Physics, etc.)
+- `exam_papers`: Exam paper metadata, file URLs, and extracted text
+- `student_paper_interactions`: Tracks which students access which papers
+- `chat_sessions`: Stores AI chat history for each student per paper
 
 ### Key Features
 - Automatic timestamp updates
 - UUID primary keys
-- Foreign key constraints
-- Comprehensive RLS policies
+- Foreign key constraints with CASCADE deletes
+- Comprehensive RLS policies on all tables
+- Optimized indexes for query performance
+- JSONB storage for flexible chat message data
 
 ## API Endpoints
 
@@ -164,13 +201,51 @@ Helper functions for permission checking:
 - `POST /functions/v1/update-password`: Update user password
 - `POST /functions/v1/validate-password`: Validate password strength
 
-**AI Features**:
+**AI & Exam Features**:
 - `POST /functions/v1/exam-chat-ai`: AI-powered exam tutor chatbot
   - Requires `GEMINI_API_KEY` to be configured in Supabase secrets
+  - Automatically detects question numbers (e.g., "question 1", "Q5")
+  - Extracts specific questions and marking schemes from uploaded PDFs
   - Returns structured responses with explanations, examples, and solutions
+  - References marking scheme to provide guidance on getting full marks
   - Handles errors gracefully with user-friendly messages
 
+- `POST /functions/v1/extract-pdf-text`: PDF text extraction service
+  - Automatically triggered when exam papers are uploaded
+  - Extracts text from both exam paper and marking scheme PDFs
+  - Updates extraction status (pending → processing → completed/failed)
+  - Stores extracted text in database for AI to access
+
 All endpoints require proper authorization and include comprehensive error handling.
+
+## How the AI Tutor Works
+
+### Upload Process
+1. Admin uploads an exam paper PDF and marking scheme PDF
+2. Files are stored in Supabase storage buckets
+3. `extract-pdf-text` edge function is automatically triggered
+4. Text is extracted from both PDFs using pdf-parse library
+5. Extracted text is stored in the database with status tracking
+
+### Student Interaction
+1. Student navigates to an exam paper
+2. Student asks a question (e.g., "Explain question 5")
+3. System detects the question number from the query
+4. Specific question text is extracted from the exam paper
+5. Corresponding marking scheme section is extracted
+6. AI receives focused content: the specific question + marking scheme
+7. AI generates structured response:
+   - **Explanation**: What the question asks and key concepts
+   - **Examples**: 2-3 concrete examples demonstrating the concepts
+   - **How to Get Full Marks**: Specific marking points from scheme
+   - **Solution**: Complete model answer aligned with marking criteria
+
+### Question Detection
+The AI automatically recognizes various question formats:
+- "question 1", "question 5a"
+- "Q1", "Q.5", "q3"
+- "1)", "5a)", "3."
+- Standalone numbers at start: "1 explain", "5 solve"
 
 ## Development
 

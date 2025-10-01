@@ -90,37 +90,61 @@ Deno.serve(async (req: Request) => {
     console.log('[exam-chat-ai] Has paper content:', hasPaperContent);
     console.log('[exam-chat-ai] Has marking scheme:', hasMarkingScheme);
 
+    const questionNumber = extractQuestionNumber(question);
+    console.log('[exam-chat-ai] Detected question number:', questionNumber);
+
+    let focusedPaperContent = paperContent;
+    let focusedMarkingScheme = markingSchemeContent;
+    let questionContext = '';
+
+    if (questionNumber && hasPaperContent) {
+      const extractedQuestion = extractSpecificQuestion(paperContent, questionNumber);
+      if (extractedQuestion) {
+        console.log('[exam-chat-ai] Extracted specific question, length:', extractedQuestion.length);
+        questionContext = `\n=== SPECIFIC QUESTION ${questionNumber} FROM EXAM PAPER ===\n${extractedQuestion}\n=== END OF QUESTION ${questionNumber} ===\n\n`;
+      }
+    }
+
+    if (questionNumber && hasMarkingScheme) {
+      const extractedScheme = extractSpecificMarkingScheme(markingSchemeContent, questionNumber);
+      if (extractedScheme) {
+        console.log('[exam-chat-ai] Extracted specific marking scheme, length:', extractedScheme.length);
+        focusedMarkingScheme = `\n=== MARKING SCHEME FOR QUESTION ${questionNumber} ===\n${extractedScheme}\n=== END OF MARKING SCHEME FOR QUESTION ${questionNumber} ===\n\n`;
+      }
+    }
+
     const prompt = `You are an expert exam tutor helping students understand exam questions and how to answer them effectively.
 
-${paperContent || "No paper content provided"}
+${questionContext ? questionContext : (paperContent || "No paper content provided")}
 
-${markingSchemeContent || "No marking scheme provided"}
+${focusedMarkingScheme || "No marking scheme provided"}
 
 The student is asking: "${question}"
 
-${hasPaperContent ? 'IMPORTANT: You have been provided with the complete exam paper content above. Read through it carefully and reference specific questions, sections, or content from the paper in your response.' : 'Note: The exam paper content is not available. Provide general educational guidance.'}
+${hasPaperContent ? `IMPORTANT: You have been provided with the ${questionNumber ? `specific question ${questionNumber}` : 'complete exam paper'} content above. Read through it carefully and reference specific parts of the question in your response.` : 'Note: The exam paper content is not available. Provide general educational guidance.'}
 
-${hasMarkingScheme ? 'IMPORTANT: You have been provided with the marking scheme above. Use it to provide accurate guidance on how marks are awarded and what examiners are looking for.' : 'Note: The marking scheme is not available. Provide general best practices for answering such questions.'}
+${hasMarkingScheme ? `IMPORTANT: You have been provided with the ${questionNumber ? `marking scheme for question ${questionNumber}` : 'complete marking scheme'} above. Use it to provide accurate guidance on how marks are awarded and what examiners are looking for. Quote specific marking points from the scheme.` : 'Note: The marking scheme is not available. Provide general best practices for answering such questions.'}
 
 Your task is to help the student understand this question and how to answer it correctly. Please provide a comprehensive educational response in the following structured format:
 
 ## Explanation
-Provide a clear explanation of what the question is asking and the key concepts involved. Break down the question into understandable parts. ${hasPaperContent ? 'Reference the specific question from the exam paper.' : ''}
+${questionNumber ? `First, quote the exact text of question ${questionNumber} from the exam paper, then provide a clear explanation of what it's asking.` : 'Provide a clear explanation of what the question is asking and the key concepts involved.'} Break down the question into understandable parts. Explain any technical terms or concepts that the student needs to know.
 
 ## Examples
-Provide 2-3 relevant, concrete examples that illustrate the concepts or demonstrate similar problems and their solutions.
+Provide 2-3 relevant, concrete examples that illustrate the concepts or demonstrate similar problems and their solutions. Make these examples specific and practical.
 
 ## How to Get Full Marks
-Provide clear bullet points on exactly what a student needs to include in their answer to achieve full marks. ${hasMarkingScheme ? 'Base this on the marking scheme provided.' : 'Provide general best practices.'} Focus on:
-- Key points that must be mentioned
+${hasMarkingScheme ? 'Based on the marking scheme provided, list the specific marking points and what the examiner is looking for.' : 'Provide clear bullet points on exactly what a student needs to include in their answer to achieve full marks.'} Focus on:
+- Key points that must be mentioned (${hasMarkingScheme ? 'quote from marking scheme' : 'based on best practices'})
 - Important terminology to use
 - Common mistakes to avoid
 - How to structure the answer
+${hasMarkingScheme ? '- Marks allocated for each point (if shown in marking scheme)' : ''}
 
 ## Solution
-Provide a complete, well-structured solution or answer to the question that demonstrates best practices and would receive full marks. ${hasMarkingScheme ? 'Align your solution with the marking scheme criteria.' : ''}
+Provide a complete, well-structured model answer to the question that demonstrates best practices and would receive full marks. ${hasMarkingScheme ? 'Ensure your solution addresses every marking point from the scheme.' : 'Structure your answer logically with clear headings and well-explained reasoning.'}
 
-IMPORTANT: Format your response using these exact headings. Be specific, educational, and helpful. ${hasPaperContent ? 'Make sure to demonstrate that you have read and understood the exam paper by referencing specific content from it.' : ''} If you need clarification about the question, explain what information would be helpful and provide the best guidance you can with the available context.`;
+IMPORTANT: Format your response using these exact headings. Be specific, educational, and helpful. ${hasPaperContent ? 'Make sure to demonstrate that you have read and understood the exam paper by quoting relevant parts of the question.' : ''} ${hasMarkingScheme ? 'Reference the marking scheme explicitly in your response.' : ''}`;
 
     console.log('[exam-chat-ai] Sending prompt to AI model...');
     console.log('[exam-chat-ai] Prompt length:', prompt.length);
@@ -190,6 +214,135 @@ IMPORTANT: Format your response using these exact headings. Be specific, educati
     );
   }
 });
+
+function extractQuestionNumber(userQuestion: string): string | null {
+  const patterns = [
+    /question\s+(\d+[a-z]?)/i,
+    /q\.?\s*(\d+[a-z]?)/i,
+    /\bq(\d+[a-z]?)\b/i,
+    /\b(\d+[a-z]?)\s*\)/,
+    /^(\d+[a-z]?)[.:\s]/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = userQuestion.match(pattern);
+    if (match && match[1]) {
+      return match[1].toLowerCase();
+    }
+  }
+
+  return null;
+}
+
+function extractSpecificQuestion(paperContent: string, questionNumber: string): string | null {
+  const qNum = questionNumber.toLowerCase();
+
+  const patterns = [
+    new RegExp(`(?:^|\\n)\\s*${qNum}[.):\\s]([\\s\\S]*?)(?=\\n\\s*(?:\\d+[a-z]?)[.):]|$)`, 'i'),
+    new RegExp(`(?:^|\\n)\\s*question\\s+${qNum}[.):\\s]([\\s\\S]*?)(?=\\n\\s*question\\s+\\d+|$)`, 'i'),
+    new RegExp(`(?:^|\\n)\\s*Q\\.?\\s*${qNum}[.):\\s]([\\s\\S]*?)(?=\\n\\s*Q\\.?\\s*\\d+|$)`, 'i'),
+  ];
+
+  for (const pattern of patterns) {
+    const match = paperContent.match(pattern);
+    if (match && match[1]) {
+      const extracted = match[1].trim();
+      if (extracted.length > 20) {
+        return `Question ${questionNumber}: ${extracted}`;
+      }
+    }
+  }
+
+  const lines = paperContent.split('\n');
+  let capturing = false;
+  let questionText = '';
+  let captureLines = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if (!capturing && line.match(new RegExp(`^\\s*${qNum}[.):\\s]`, 'i'))) {
+      capturing = true;
+      questionText = line + '\n';
+      captureLines = 1;
+      continue;
+    }
+
+    if (capturing) {
+      if (line.match(/^\s*\d+[a-z]?[.):]/) && captureLines > 0) {
+        break;
+      }
+
+      questionText += line + '\n';
+      captureLines++;
+
+      if (captureLines > 50) {
+        break;
+      }
+    }
+  }
+
+  if (questionText.length > 20) {
+    return questionText.trim();
+  }
+
+  return null;
+}
+
+function extractSpecificMarkingScheme(markingSchemeContent: string, questionNumber: string): string | null {
+  const qNum = questionNumber.toLowerCase();
+
+  const patterns = [
+    new RegExp(`(?:^|\\n)\\s*${qNum}[.):\\s]([\\s\\S]*?)(?=\\n\\s*(?:\\d+[a-z]?)[.):]|$)`, 'i'),
+    new RegExp(`(?:^|\\n)\\s*question\\s+${qNum}[.):\\s]([\\s\\S]*?)(?=\\n\\s*question\\s+\\d+|$)`, 'i'),
+    new RegExp(`(?:^|\\n)\\s*Q\\.?\\s*${qNum}[.):\\s]([\\s\\S]*?)(?=\\n\\s*Q\\.?\\s*\\d+|$)`, 'i'),
+  ];
+
+  for (const pattern of patterns) {
+    const match = markingSchemeContent.match(pattern);
+    if (match && match[1]) {
+      const extracted = match[1].trim();
+      if (extracted.length > 10) {
+        return `Marking scheme for Question ${questionNumber}:\n${extracted}`;
+      }
+    }
+  }
+
+  const lines = markingSchemeContent.split('\n');
+  let capturing = false;
+  let schemeText = '';
+  let captureLines = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if (!capturing && line.match(new RegExp(`^\\s*${qNum}[.):\\s]`, 'i'))) {
+      capturing = true;
+      schemeText = line + '\n';
+      captureLines = 1;
+      continue;
+    }
+
+    if (capturing) {
+      if (line.match(/^\s*\d+[a-z]?[.):]/) && captureLines > 0) {
+        break;
+      }
+
+      schemeText += line + '\n';
+      captureLines++;
+
+      if (captureLines > 100) {
+        break;
+      }
+    }
+  }
+
+  if (schemeText.length > 10) {
+    return schemeText.trim();
+  }
+
+  return null;
+}
 
 function parseAIResponse(text: string): AIResponse {
   const sections = {
