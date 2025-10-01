@@ -25,14 +25,22 @@ export default function ModernExamPaperViewer() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pdfViewerRef = useRef<HTMLIFrameElement>(null)
+  const hasFetchedRef = useRef(false)
 
   useEffect(() => {
-    if (paperId && user) {
+    if (paperId && user?.id && !hasFetchedRef.current) {
+      hasFetchedRef.current = true
       fetchPaper()
       fetchChatHistory()
       fetchAllChatSessions()
     }
-  }, [paperId, user])
+  }, [paperId, user?.id])
+
+  useEffect(() => {
+    return () => {
+      hasFetchedRef.current = false
+    }
+  }, [paperId])
 
   useEffect(() => {
     scrollToBottom()
@@ -54,9 +62,13 @@ export default function ModernExamPaperViewer() {
           subject:exam_subjects(*)
         `)
         .eq('id', paperId)
-        .single()
+        .maybeSingle()
 
       if (fetchError) throw fetchError
+
+      if (!data) {
+        throw new Error('Paper not found')
+      }
 
       if (data) {
         setPaper({

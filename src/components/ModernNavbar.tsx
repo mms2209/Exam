@@ -13,15 +13,17 @@ export default function ModernNavbar() {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
   const [examPapersByGrade, setExamPapersByGrade] = useState<ExamPapersByGrade>({})
   const [isLoading, setIsLoading] = useState(true)
+  const hasFetchedRef = useRef(false)
 
   const gradesDropdownRef = useRef<HTMLDivElement>(null)
   const profileDropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (user) {
+    if (user && !hasFetchedRef.current) {
+      hasFetchedRef.current = true
       fetchExamPapers()
     }
-  }, [user])
+  }, [user?.id])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
