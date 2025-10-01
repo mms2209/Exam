@@ -5,8 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tool Staff Management Application</title>
-    <script type="module" crossorigin src="/assets/index-B5E5br21.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BRNHoyX_.css">
+    <!-- PDF.js library for rendering PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
+    <script>
+      // The workerSrc property must be specified for pdf.js to work correctly.
+      if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+      }
+    </script>
+    <script type="module" crossorigin src="/assets/index-D9Q0vEE4.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DPwZEbnZ.css">
   </head>
   <body>
     <div id="root"></div>
