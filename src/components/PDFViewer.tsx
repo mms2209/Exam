@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2 } from 'lucide-react'
 
-// Set worker path
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+// Set worker path using jsdelivr which is more reliable with CORS
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
 
 interface PDFViewerProps {
   url: string
@@ -34,7 +34,11 @@ export function PDFViewer({ url }: PDFViewerProps) {
       setIsLoading(true)
       setError(null)
 
-      const loadingTask = pdfjsLib.getDocument(url)
+      const loadingTask = pdfjsLib.getDocument({
+        url,
+        cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+        cMapPacked: true,
+      })
       const pdf = await loadingTask.promise
 
       setPdfDoc(pdf)
