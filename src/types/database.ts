@@ -155,6 +155,11 @@ export interface Database {
           paper_file_url: string
           marking_scheme_file_url: string
           uploaded_by: string | null
+          paper_extracted_text: string | null
+          marking_scheme_extracted_text: string | null
+          text_extraction_status: 'pending' | 'processing' | 'completed' | 'failed'
+          text_extracted_at: string | null
+          extraction_error: string | null
           created_at: string
           updated_at: string
         }
@@ -167,6 +172,11 @@ export interface Database {
           paper_file_url: string
           marking_scheme_file_url: string
           uploaded_by?: string | null
+          paper_extracted_text?: string | null
+          marking_scheme_extracted_text?: string | null
+          text_extraction_status?: 'pending' | 'processing' | 'completed' | 'failed'
+          text_extracted_at?: string | null
+          extraction_error?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -179,6 +189,11 @@ export interface Database {
           paper_file_url?: string
           marking_scheme_file_url?: string
           uploaded_by?: string | null
+          paper_extracted_text?: string | null
+          marking_scheme_extracted_text?: string | null
+          text_extraction_status?: 'pending' | 'processing' | 'completed' | 'failed'
+          text_extracted_at?: string | null
+          extraction_error?: string | null
           created_at?: string
           updated_at?: string
         }

@@ -44,7 +44,7 @@ export function AdminExamPapers() {
     setUploadError(null)
 
     try {
-      await examPapersApi.uploadExamPaper(paperFile, markingSchemeFile, {
+      const uploadedPaper = await examPapersApi.uploadExamPaper(paperFile, markingSchemeFile, {
         subjectId: selectedSubject,
         year,
         paperNumber,
@@ -52,6 +52,10 @@ export function AdminExamPapers() {
       })
 
       queryClient.invalidateQueries({ queryKey: ['exam-papers'] })
+
+      examPapersApi.extractPDFText(uploadedPaper.id).catch(error => {
+        console.error('PDF extraction failed:', error)
+      })
 
       setPaperFile(null)
       setMarkingSchemeFile(null)

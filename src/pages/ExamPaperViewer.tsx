@@ -53,25 +53,74 @@ export function ExamPaperViewer() {
 
       setErrorMessage(null)
 
-      const paperContext = paper ? `
-Exam Paper: ${paper.title || 'Untitled'}
-Year: ${paper.year}
-Paper Number: ${paper.paper_number}
-Subject ID: ${paper.subject_id}
+      const paperWithText = await examPapersApi.getExamPaperWithText(paperId!)
 
-This is an exam paper that students are studying. The student is asking about a specific question from this paper.
-` : 'No paper context available'
+      let paperContent = ''
+      let markingSchemeContent = ''
 
-      const markingSchemeContext = `
-The marking scheme for this exam paper is available but PDF text extraction is not yet implemented.
-Please provide your best educational guidance based on the question asked and general exam principles.
+      if (paperWithText.text_extraction_status === 'completed') {
+        if (paperWithText.paper_extracted_text) {
+          paperContent = `
+Exam Paper: ${paperWithText.title || 'Untitled'}
+Subject: ${paperWithText.subject?.name}
+Year: ${paperWithText.year}
+Paper Number: ${paperWithText.paper_number}
+
+=== EXAM PAPER CONTENT ===
+${paperWithText.paper_extracted_text}
+=== END OF EXAM PAPER ===
+
+The student is asking about a specific question from this exam paper.
 `
+        }
+
+        if (paperWithText.marking_scheme_extracted_text) {
+          markingSchemeContent = `
+=== MARKING SCHEME ===
+${paperWithText.marking_scheme_extracted_text}
+=== END OF MARKING SCHEME ===
+
+Use this marking scheme to provide accurate guidance on how to get full marks.
+`
+        }
+      } else if (paperWithText.text_extraction_status === 'processing') {
+        paperContent = `
+Exam Paper: ${paperWithText.title || 'Untitled'}
+Subject: ${paperWithText.subject?.name}
+Year: ${paperWithText.year}
+Paper Number: ${paperWithText.paper_number}
+
+Note: PDF text is currently being extracted. Please try again in a few moments for more detailed assistance.
+`
+        markingSchemeContent = 'PDF text extraction is in progress. Please wait and try again shortly.'
+      } else if (paperWithText.text_extraction_status === 'pending') {
+        paperContent = `
+Exam Paper: ${paperWithText.title || 'Untitled'}
+Subject: ${paperWithText.subject?.name}
+Year: ${paperWithText.year}
+Paper Number: ${paperWithText.paper_number}
+
+Note: PDF text extraction has not started yet. The AI will provide general guidance based on your question.
+`
+        markingSchemeContent = 'PDF text extraction is pending. General guidance will be provided.'
+      } else {
+        paperContent = `
+Exam Paper: ${paperWithText.title || 'Untitled'}
+Subject: ${paperWithText.subject?.name}
+Year: ${paperWithText.year}
+Paper Number: ${paperWithText.paper_number}
+
+Note: PDF text extraction failed. The AI will provide general educational guidance.
+Error: ${paperWithText.extraction_error || 'Unknown error'}
+`
+        markingSchemeContent = 'PDF text could not be extracted. Providing general educational guidance.'
+      }
 
       const response = await examPapersApi.sendChatMessage({
         paperId: paperId!,
         question,
-        paperContent: paperContext,
-        markingSchemeContent: markingSchemeContext
+        paperContent,
+        markingSchemeContent
       })
 
       return { userMessage, response }

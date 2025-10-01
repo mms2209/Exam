@@ -662,5 +662,31 @@ export const examPapersApi = {
       .createSignedUrl(paperPath, 3600);
 
     return data?.signedUrl || null;
+  },
+
+  async extractPDFText(paperId: string) {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_BASE_URL}/extract-pdf-text`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ paperId })
+    });
+
+    return handleResponse(response);
+  },
+
+  async getExamPaperWithText(id: string) {
+    const { data, error } = await supabase
+      .from('exam_papers')
+      .select(`
+        *,
+        subject:exam_subjects(*)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 };
