@@ -8,9 +8,10 @@ import { AlertCircle } from 'lucide-react'
 interface LayoutProps {
   showSidebar?: boolean
   modernLayout?: boolean
+  children?: React.ReactNode
 }
 
-export function Layout({ showSidebar = true, modernLayout = false }: LayoutProps) {
+export function Layout({ showSidebar = true, modernLayout = false, children }: LayoutProps) {
   const { error } = useAuth()
   const isUsingCachedData = error?.includes('cached') || error?.includes('offline')
 
@@ -26,7 +27,7 @@ export function Layout({ showSidebar = true, modernLayout = false }: LayoutProps
             </div>
           </div>
         )}
-        <Outlet />
+        {children || <Outlet />}
       </div>
     )
   }
@@ -45,7 +46,7 @@ export function Layout({ showSidebar = true, modernLayout = false }: LayoutProps
       <div className="flex">
         {showSidebar && <Sidebar />}
         <main className={`flex-1 ${showSidebar ? 'ml-64' : ''} p-6`}>
-          <Outlet />
+          {children || <Outlet />}
         </main>
       </div>
     </div>
