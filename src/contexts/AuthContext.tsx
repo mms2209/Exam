@@ -343,6 +343,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       inactivityTimerRef.current = null
     }
 
+    // Clear permission cache
+    clearPermissionCache()
+
     // Clear all React Query cache
     if (user?.id) {
       queryClient.removeQueries({ queryKey: queryKeys.userProfile(user.id) })
@@ -357,7 +360,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Clear all localStorage items related to auth
     try {
       localStorage.removeItem(PROFILE_CACHE_KEY)
-      localStorage.removeItem(PROFILE_TIMESTAMP_KEY)
+      localStorage.removeItem(CACHE_TIMESTAMP_KEY)
+      localStorage.removeItem(SESSION_CACHE_KEY)
       // Clear any other cached data
       const keysToRemove: string[] = []
       for (let i = 0; i < localStorage.length; i++) {

@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
 import type { ExamPaperWithSubject, ExamPapersByGrade } from '../types/examPapers'
 
 export default function ModernNavbar() {
-  const { user, logout } = useAuth()
+  const { user, signOut } = useAuth()
   const navigate = useNavigate()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isGradesDropdownOpen, setIsGradesDropdownOpen] = useState(false)
@@ -91,8 +91,8 @@ export default function ModernNavbar() {
   }
 
   const handleLogout = async () => {
-    await logout()
-    // Navigation is handled by logout function (forces reload)
+    await signOut()
+    // Navigation is handled by signOut function (forces reload)
   }
 
   const gradeOrder = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', 'AS', 'A2']
