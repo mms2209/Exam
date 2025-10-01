@@ -57,7 +57,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `You are an expert exam tutor helping students understand exam questions and how to answer them effectively.
 
