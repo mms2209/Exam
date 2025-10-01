@@ -21,6 +21,7 @@ const AdminExamPapers = React.lazy(() => import('./pages/AdminExamPapers').then(
 const StudentExamPapers = React.lazy(() => import('./pages/StudentExamPapers').then(module => ({ default: module.StudentExamPapers })))
 const ExamPaperViewer = React.lazy(() => import('./pages/ExamPaperViewer').then(module => ({ default: module.ExamPaperViewer })))
 const ModernExamPaperViewer = React.lazy(() => import('./pages/ModernExamPaperViewer'))
+const StudentHome = React.lazy(() => import('./pages/StudentHome'))
 
 const PageLoadingFallback = () => (
   <div className="flex items-center justify-center py-12">
@@ -54,7 +55,7 @@ function HomeRoute() {
     if (user.roles?.some((role: any) => role.name === 'admin')) {
       return <Navigate to="/admin/dashboard" replace />
     }
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/home" replace />
   }
 
   return <LandingPage />
@@ -145,6 +146,17 @@ const router = createBrowserRouter([
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/force-password-change', element: <ForcePasswordChangePage /> },
+  {
+    path: '/home',
+    element: (
+      <ProtectedRoute>
+        <Suspense fallback={<AppLoadingFallback />}>
+          <StudentHome />
+        </Suspense>
+      </ProtectedRoute>
+    ),
+    hydrateFallbackElement: <AppLoadingFallback />,
+  },
   {
     path: '/exam-paper/:paperId',
     element: (

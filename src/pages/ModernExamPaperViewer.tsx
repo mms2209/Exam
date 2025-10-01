@@ -240,10 +240,10 @@ export default function ModernExamPaperViewer() {
           <h2 className="text-2xl font-semibold text-gray-900 mb-2">Error Loading Paper</h2>
           <p className="text-gray-600 mb-4">{error || 'Paper not found'}</p>
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/home')}
             className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
           >
-            Back to Dashboard
+            Back to Home
           </button>
         </div>
       </div>
@@ -268,11 +268,11 @@ export default function ModernExamPaperViewer() {
       <div className={`hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 ${isChatHistorySidebarOpen ? 'flex' : 'hidden lg:flex'}`}>
         <div className="p-4 border-b border-gray-200">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/home')}
             className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
-            Dashboard
+            Home
           </button>
         </div>
 
@@ -502,11 +502,11 @@ export default function ModernExamPaperViewer() {
           <div className="absolute left-0 top-0 bottom-0 w-64 bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/home')}
                 className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Dashboard
+                Home
               </button>
               <button
                 onClick={() => setIsChatHistorySidebarOpen(false)}

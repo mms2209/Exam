@@ -103,7 +103,7 @@ export default function ModernNavbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to={user ? "/home" : "/"} className="flex items-center gap-2">
               <BookOpen className="h-7 w-7 text-emerald-600" />
               <span className="text-xl font-semibold text-gray-900">AI Exam Tutor</span>
             </Link>
