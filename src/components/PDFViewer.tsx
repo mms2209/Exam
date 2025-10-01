@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import * as pdfjsLib from 'pdfjs-dist'
+import * as pdfjsLibImport from 'pdfjs-dist'
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2 } from 'lucide-react'
 
-// Set worker path using jsdelivr which is more reliable with CORS
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
+// Use the globally loaded pdfjsLib from CDN if available, otherwise use the npm package
+const pdfjsLib = (window as any).pdfjsLib || pdfjsLibImport
+
+// Set worker path if not already set
+if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLibImport.version}/build/pdf.worker.min.js`
+}
 
 interface PDFViewerProps {
   url: string
