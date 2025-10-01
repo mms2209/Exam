@@ -9,7 +9,7 @@ Your AI exam tutor system is ready! Here's what's been built:
 3. **Smart AI chat** that detects question numbers and provides focused answers
 4. **Complete storage setup** for file uploads
 
-## 3-Step Setup (5 minutes)
+## 4-Step Setup (10 minutes)
 
 ### Step 1: Create Database Tables
 
@@ -29,7 +29,21 @@ Your AI exam tutor system is ready! Here's what's been built:
 
 **Result**: Students and admins can upload/download PDF files
 
-### Step 3: Test It
+### Step 3: Deploy Updated Edge Function (IMPORTANT!)
+
+The PDF extraction function needs to be redeployed with a critical fix:
+
+1. In Supabase Dashboard, go to Edge Functions
+2. Click on `extract-pdf-text`
+3. Click "Deploy new version"
+4. Copy/paste entire contents of `supabase/functions/extract-pdf-text/index.ts`
+5. Click "Deploy"
+
+**Why this is needed**: The original function was missing the Buffer import, causing "Buffer is not defined" errors. The fix has been applied.
+
+**Result**: PDF text extraction will work correctly
+
+### Step 4: Test It
 
 1. Log in as admin (admin@example.com)
 2. Go to Admin → Exam Papers
@@ -108,13 +122,20 @@ Riba, which literally means "increase" or "excess," refers to...
 
 ## Troubleshooting
 
+**Q: Getting "Buffer is not defined" error?**
+- Deploy the updated edge function (Step 3 above)
+- See `PDF_EXTRACTION_FIX.md` for detailed explanation
+
 **Q: Upload succeeds but extraction fails?**
+- Ensure edge function is deployed with Buffer import fix
 - Check that PDF has text (not scanned image)
 - Click "Retry extraction" in admin panel
+- Check Edge Function logs for specific error
 
 **Q: AI doesn't quote the exam paper?**
 - Wait for extraction to complete (check status badge)
 - Ensure status shows "Extracted" not "Pending"
+- If status is "Failed", retry extraction after deploying fix
 
 **Q: Question not detected?**
 - Ask clearly: "Explain question 5"
@@ -130,23 +151,24 @@ Riba, which literally means "increase" or "excess," refers to...
 
 ### Modified Files
 - `supabase/functions/exam-chat-ai/index.ts` - Enhanced with question detection (390 lines)
+- `supabase/functions/extract-pdf-text/index.ts` - Fixed Buffer import issue
 - `README.md` - Updated with complete setup instructions
 
-### Existing Files (Unchanged)
-- `supabase/functions/extract-pdf-text/index.ts` - Already working correctly
-- Frontend files - Already set up for the system
-- All other edge functions - Working as before
+### New Documentation
+- `PDF_EXTRACTION_FIX.md` - Explains the Buffer import fix
 
 ## Next Actions
 
 1. ✅ Apply database migration (Step 1 above)
 2. ✅ Create storage buckets (Step 2 above)
-3. ✅ Upload a test exam paper
-4. ✅ Test the AI chat
-5. 🎉 Celebrate - it works!
+3. ✅ Deploy updated edge function (Step 3 above - CRITICAL!)
+4. ✅ Upload a test exam paper
+5. ✅ Test the AI chat
+6. 🎉 Celebrate - it works!
 
 ## Support Resources
 
+- `PDF_EXTRACTION_FIX.md` - Buffer import fix explanation
 - `STORAGE_SETUP.md` - Detailed storage setup
 - `IMPLEMENTATION_COMPLETE.md` - Technical details
 - `README.md` - Full project documentation

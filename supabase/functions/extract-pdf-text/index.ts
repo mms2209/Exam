@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.55.0";
+import { Buffer } from "node:buffer";
 import pdfParse from "npm:pdf-parse@1.1.1";
 
 const corsHeaders = {
@@ -83,32 +84,66 @@ Deno.serve(async (req: Request) => {
     let extractionError = null;
 
     try {
-      const { data: paperData } = await supabase.storage
+      console.log('[extract-pdf-text] Downloading exam paper from storage...');
+      const { data: paperData, error: downloadError } = await supabase.storage
         .from("exam-papers")
         .download(paper.paper_file_url);
 
+      if (downloadError) {
+        throw new Error(`Download failed: ${downloadError.message}`);
+      }
+
       if (paperData) {
+        console.log('[extract-pdf-text] Paper downloaded, size:', paperData.size);
         const paperBuffer = await paperData.arrayBuffer();
-        const paperPdf = await pdfParse(Buffer.from(paperBuffer));
+        console.log('[extract-pdf-text] ArrayBuffer size:', paperBuffer.byteLength);
+
+        const buffer = Buffer.from(paperBuffer);
+        console.log('[extract-pdf-text] Buffer created, length:', buffer.length);
+
+        console.log('[extract-pdf-text] Starting PDF parsing...');
+        const paperPdf = await pdfParse(buffer);
+        console.log('[extract-pdf-text] PDF parsed, text length:', paperPdf.text?.length || 0);
+
         paperText = paperPdf.text || "";
+      } else {
+        throw new Error("No data returned from storage");
       }
     } catch (error) {
       console.error("Error extracting paper text:", error);
+      console.error("Error stack:", error.stack);
       extractionError = `Paper extraction failed: ${error.message}`;
     }
 
     try {
-      const { data: schemeData } = await supabase.storage
+      console.log('[extract-pdf-text] Downloading marking scheme from storage...');
+      const { data: schemeData, error: downloadError } = await supabase.storage
         .from("marking-schemes")
         .download(paper.marking_scheme_file_url);
 
+      if (downloadError) {
+        throw new Error(`Download failed: ${downloadError.message}`);
+      }
+
       if (schemeData) {
+        console.log('[extract-pdf-text] Marking scheme downloaded, size:', schemeData.size);
         const schemeBuffer = await schemeData.arrayBuffer();
-        const schemePdf = await pdfParse(Buffer.from(schemeBuffer));
+        console.log('[extract-pdf-text] ArrayBuffer size:', schemeBuffer.byteLength);
+
+        const buffer = Buffer.from(schemeBuffer);
+        console.log('[extract-pdf-text] Buffer created, length:', buffer.length);
+
+        console.log('[extract-pdf-text] Starting PDF parsing...');
+        const schemePdf = await pdfParse(buffer);
+        console.log('[extract-pdf-text] PDF parsed, text length:', schemePdf.text?.length || 0);
+
         markingSchemeText = schemePdf.text || "";
+      } else {
+        throw new Error("No data returned from storage");
       }
     } catch (error) {
       console.error("Error extracting marking scheme text:", error);
+      console.error("Error stack:", error.stack);
       extractionError = extractionError
         ? `${extractionError}; Scheme extraction failed: ${error.message}`
         : `Scheme extraction failed: ${error.message}`;
