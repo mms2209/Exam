@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "npm:@google/generative-ai@0.21.0";
+import { GoogleGenerativeAI } from "@google/genai";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
