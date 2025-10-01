@@ -428,13 +428,36 @@ export default function ModernExamPaperViewer() {
           {/* PDF Viewer */}
           <div className={`flex-1 bg-gray-100 ${
             viewMode === 'chat' ? 'hidden lg:flex' : 'flex'
-          } ${viewMode === 'both' ? 'lg:flex' : ''}`}>
-            <iframe
-              ref={pdfViewerRef}
-              src={paperUrl}
-              className="w-full h-full border-0"
-              title="Exam Paper PDF"
-            />
+          } ${viewMode === 'both' ? 'lg:flex' : ''} flex flex-col`}>
+            {paperUrl ? (
+              <>
+                <object
+                  ref={pdfViewerRef as any}
+                  data={paperUrl}
+                  type="application/pdf"
+                  className="w-full h-full"
+                >
+                  <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                    <FileText className="h-16 w-16 text-gray-400 mb-4" />
+                    <p className="text-gray-600 mb-4">
+                      Unable to display PDF in browser.
+                    </p>
+                    <a
+                      href={paperUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                    >
+                      Open PDF in New Tab
+                    </a>
+                  </div>
+                </object>
+              </>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+              </div>
+            )}
           </div>
 
           {/* AI Chat */}
