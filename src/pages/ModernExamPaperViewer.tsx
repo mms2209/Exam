@@ -578,7 +578,7 @@ export default function ModernExamPaperViewer() {
                           <button
                             key={session.id}
                             onClick={() => {
-                              navigate(`/exam-paper/${session.paper_id}`)
+                              navigate(`/exam-papers/${session.paper_id}`)
                               setIsChatHistorySidebarOpen(false)
                             }}
                             className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
