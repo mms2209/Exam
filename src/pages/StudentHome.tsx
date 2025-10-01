@@ -60,7 +60,7 @@ export default function StudentHome() {
   }
 
   const handlePaperClick = (paperId: string) => {
-    navigate(`/exam-paper/${paperId}`)
+    navigate(`/exam-papers/${paperId}`)
   }
 
   const gradeOrder = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', 'AS', 'A2']
