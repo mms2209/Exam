@@ -169,6 +169,21 @@ const router = createBrowserRouter([
     hydrateFallbackElement: <AppLoadingFallback />,
   },
   {
+    path: '/profile',
+    element: (
+      <ProtectedRoute>
+        <Layout showSidebar={false} modernLayout={true}>
+          <Suspense fallback={<PageLoadingFallback />}>
+            <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+              <ProfilePage />
+            </div>
+          </Suspense>
+        </Layout>
+      </ProtectedRoute>
+    ),
+    hydrateFallbackElement: <AppLoadingFallback />,
+  },
+  {
     path: '/app',
     element: (
       <ProtectedRoute>
@@ -234,17 +249,6 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         loader: adminPermissionsLoader,
-        hydrateFallbackElement: <PageLoadingFallback />,
-      },
-      {
-        path: 'profile',
-        element: (
-          <ProtectedRoute>
-            <Suspense fallback={<PageLoadingFallback />}>
-              <ProfilePage />
-            </Suspense>
-          </ProtectedRoute>
-        ),
         hydrateFallbackElement: <PageLoadingFallback />,
       },
       {
@@ -343,7 +347,7 @@ const router = createBrowserRouter([
   { path: '/admin/permissions', element: <Navigate to="/app/admin/permissions" replace /> },
   { path: '/admin/exam-papers', element: <Navigate to="/app/admin/exam-papers" replace /> },
   { path: '/exam-papers', element: <Navigate to="/app/exam-papers" replace /> },
-  { path: '/profile', element: <Navigate to="/app/profile" replace /> },
+  { path: '/app/profile', element: <Navigate to="/profile" replace /> },
   { path: '/reports', element: <Navigate to="/app/reports" replace /> },
   { path: '/transactions', element: <Navigate to="/app/transactions" replace /> },
   { path: '/analytics', element: <Navigate to="/app/analytics" replace /> },
