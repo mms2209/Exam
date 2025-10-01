@@ -42,11 +42,7 @@ const AppLoadingFallback = () => (
 )
 
 function HomeRoute() {
-  const { user, loading } = useAuth()
-
-  if (loading && !user) {
-    return <AppLoadingFallback />
-  }
+  const { user } = useAuth()
 
   if (user) {
     if (user.needs_password_reset) {
@@ -58,7 +54,7 @@ function HomeRoute() {
     return <Navigate to="/home" replace />
   }
 
-  return <LandingPage />
+  return <Navigate to="/login" replace />
 }
 
 const dashboardLoader = async () => {
@@ -141,7 +137,7 @@ const adminPermissionsLoader = async () => {
 }
 
 const router = createBrowserRouter([
-  { path: '/', element: <HomeRoute /> },
+  { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginForm /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
