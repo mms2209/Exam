@@ -53,11 +53,25 @@ export function ExamPaperViewer() {
 
       setErrorMessage(null)
 
+      const paperContext = paper ? `
+Exam Paper: ${paper.title || 'Untitled'}
+Year: ${paper.year}
+Paper Number: ${paper.paper_number}
+Subject ID: ${paper.subject_id}
+
+This is an exam paper that students are studying. The student is asking about a specific question from this paper.
+` : 'No paper context available'
+
+      const markingSchemeContext = `
+The marking scheme for this exam paper is available but PDF text extraction is not yet implemented.
+Please provide your best educational guidance based on the question asked and general exam principles.
+`
+
       const response = await examPapersApi.sendChatMessage({
         paperId: paperId!,
         question,
-        paperContent: 'PDF content would be extracted here',
-        markingSchemeContent: 'Marking scheme content would be extracted here'
+        paperContent: paperContext,
+        markingSchemeContent: markingSchemeContext
       })
 
       return { userMessage, response }

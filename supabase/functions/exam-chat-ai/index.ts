@@ -81,29 +81,31 @@ Deno.serve(async (req: Request) => {
 
     const prompt = `You are an expert exam tutor helping students understand exam questions and how to answer them effectively.
 
-Exam Paper Context:
 ${paperContent || "No paper content provided"}
 
-Marking Scheme Context:
 ${markingSchemeContent || "No marking scheme provided"}
 
-Student Question: ${question}
+The student is asking: "${question}"
 
-Please provide a comprehensive response in the following structured format:
+Your task is to help the student understand this question and how to answer it correctly. Please provide a comprehensive educational response in the following structured format:
 
 ## Explanation
-Provide a clear explanation of the question and what it's asking for.
+Provide a clear explanation of what the question is asking and the key concepts involved. Break down the question into understandable parts.
 
 ## Examples
-Provide 2-3 relevant examples that illustrate the concept or help understand the question better.
+Provide 2-3 relevant, concrete examples that illustrate the concepts or demonstrate similar problems and their solutions.
 
 ## How to Get Full Marks
-Provide bullet points on exactly what the student needs to include in their answer to achieve full marks based on the marking scheme.
+Provide clear bullet points on exactly what a student needs to include in their answer to achieve full marks. Focus on:
+- Key points that must be mentioned
+- Important terminology to use
+- Common mistakes to avoid
+- How to structure the answer
 
 ## Solution
-Provide a complete solution or answer to the question.
+Provide a complete, well-structured solution or answer to the question that demonstrates best practices and would receive full marks.
 
-Format your response clearly with these exact headings.`;
+IMPORTANT: Format your response using these exact headings. Be specific, educational, and helpful. If you need clarification about the question, explain what information would be helpful and provide the best guidance you can with the available context.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
