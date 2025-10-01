@@ -25,67 +25,67 @@ interface NavItem {
 const navigation: NavItem[] = [
   {
     name: 'Dashboard',
-    href: '/dashboard',
+    href: '/app/dashboard',
     icon: Home,
     permission: { resource: 'dashboard', action: 'access' }
   },
   {
     name: 'Admin Panel',
-    href: '/admin/dashboard',
+    href: '/app/admin/dashboard',
     icon: Shield,
     permission: { resource: 'admin', action: 'access' }
   },
   {
     name: 'User Management',
-    href: '/admin/users',
+    href: '/app/admin/users',
     icon: Users,
     permission: { resource: 'users', action: 'manage' }
   },
   {
     name: 'Role Management',
-    href: '/admin/roles',
+    href: '/app/admin/roles',
     icon: Shield,
     permission: { resource: 'roles', action: 'manage' }
   },
   {
     name: 'Permission Management',
-    href: '/admin/permissions',
+    href: '/app/admin/permissions',
     icon: Key,
     permission: { resource: 'permissions', action: 'manage' }
   },
   {
     name: 'Reports',
-    href: '/reports',
+    href: '/app/reports',
     icon: FileText,
     permission: { resource: 'reports', action: 'view' }
   },
   {
     name: 'Transactions',
-    href: '/transactions',
+    href: '/app/transactions',
     icon: CreditCard,
     permission: { resource: 'transactions', action: 'create' }
   },
   {
     name: 'Analytics',
-    href: '/analytics',
+    href: '/app/analytics',
     icon: BarChart3,
     permission: { resource: 'reports', action: 'view' }
   },
   {
     name: 'Exam Papers',
-    href: '/exam-papers',
+    href: '/app/exam-papers',
     icon: BookOpen,
     permission: { resource: 'exam_papers', action: 'view' }
   },
   {
     name: 'Manage Papers',
-    href: '/admin/exam-papers',
+    href: '/app/admin/exam-papers',
     icon: Upload,
     permission: { resource: 'exam_papers', action: 'manage' }
   },
   {
     name: 'Settings',
-    href: '/settings',
+    href: '/app/settings',
     icon: Settings
   }
 ]

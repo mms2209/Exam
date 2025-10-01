@@ -317,7 +317,13 @@ const router = createBrowserRouter([
   { path: '/admin/users', element: <Navigate to="/app/admin/users" replace /> },
   { path: '/admin/roles', element: <Navigate to="/app/admin/roles" replace /> },
   { path: '/admin/permissions', element: <Navigate to="/app/admin/permissions" replace /> },
+  { path: '/admin/exam-papers', element: <Navigate to="/app/admin/exam-papers" replace /> },
+  { path: '/exam-papers', element: <Navigate to="/app/exam-papers" replace /> },
   { path: '/profile', element: <Navigate to="/app/profile" replace /> },
+  { path: '/reports', element: <Navigate to="/app/reports" replace /> },
+  { path: '/transactions', element: <Navigate to="/app/transactions" replace /> },
+  { path: '/analytics', element: <Navigate to="/app/analytics" replace /> },
+  { path: '/settings', element: <Navigate to="/app/settings" replace /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ], {
   future: {
