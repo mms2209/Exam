@@ -254,17 +254,43 @@ export default function ModernExamPaperViewer() {
   }
 
   const getPaperUrl = async (fileUrl: string) => {
-    const bucketName = 'exam-papers'
-    const { data, error } = await supabase.storage
-      .from(bucketName)
-      .createSignedUrl(fileUrl, 3600)
+    try {
+      const bucketName = 'exam-papers'
+      console.log('🔍 Attempting to create signed URL for:', fileUrl, 'in bucket:', bucketName)
 
-    if (error) {
-      console.error('Error creating signed URL:', error)
+      const { data, error } = await supabase.storage
+        .from(bucketName)
+        .createSignedUrl(fileUrl, 3600)
+
+      if (error) {
+        console.error('❌ Error creating signed URL:', error)
+        console.error('❌ Error details:', JSON.stringify(error, null, 2))
+
+        // Try to check if file exists
+        const { data: fileList, error: listError } = await supabase.storage
+          .from(bucketName)
+          .list()
+
+        if (listError) {
+          console.error('❌ Cannot list files in bucket:', listError)
+        } else {
+          console.log('📁 Files in bucket:', fileList)
+        }
+
+        return ''
+      }
+
+      if (!data?.signedUrl) {
+        console.error('❌ No signed URL returned')
+        return ''
+      }
+
+      console.log('✅ Successfully created signed URL')
+      return data.signedUrl
+    } catch (err) {
+      console.error('❌ Exception in getPaperUrl:', err)
       return ''
     }
-
-    return data?.signedUrl || ''
   }
 
   const groupChatSessionsBySubject = () => {
@@ -439,18 +465,33 @@ export default function ModernExamPaperViewer() {
             {paperUrl ? (
               <iframe
                 ref={pdfViewerRef}
-                src={paperUrl}
+                src={`${paperUrl}#view=FitH`}
                 className="w-full h-full border-0"
                 title="Exam Paper PDF"
                 onLoad={() => console.log('✅ PDF iframe loaded')}
                 onError={(e) => {
                   console.error('❌ PDF iframe error:', e)
-                  setError('Failed to load PDF in viewer')
                 }}
               />
             ) : isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                <FileText className="h-16 w-16 text-red-400 mb-4" />
+                <p className="text-red-600 mb-4">{error}</p>
+                {paper?.paper_file_url && (
+                  <button
+                    onClick={async () => {
+                      const url = await getPaperUrl(paper.paper_file_url)
+                      if (url) window.open(url, '_blank')
+                    }}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                  >
+                    Open PDF in New Tab
+                  </button>
+                )}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center">
