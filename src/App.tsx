@@ -20,6 +20,7 @@ const ProfilePage = React.lazy(() => import('./pages/ProfilePage').then(module =
 const AdminExamPapers = React.lazy(() => import('./pages/AdminExamPapers').then(module => ({ default: module.AdminExamPapers })))
 const StudentExamPapers = React.lazy(() => import('./pages/StudentExamPapers').then(module => ({ default: module.StudentExamPapers })))
 const ExamPaperViewer = React.lazy(() => import('./pages/ExamPaperViewer').then(module => ({ default: module.ExamPaperViewer })))
+const ModernExamPaperViewer = React.lazy(() => import('./pages/ModernExamPaperViewer'))
 
 const PageLoadingFallback = () => (
   <div className="flex items-center justify-center py-12">
@@ -144,6 +145,17 @@ const router = createBrowserRouter([
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '/force-password-change', element: <ForcePasswordChangePage /> },
+  {
+    path: '/exam-paper/:paperId',
+    element: (
+      <ProtectedRoute requiredPermission={{ resource: 'exam_papers', action: 'view' }}>
+        <Suspense fallback={<AppLoadingFallback />}>
+          <ModernExamPaperViewer />
+        </Suspense>
+      </ProtectedRoute>
+    ),
+    hydrateFallbackElement: <AppLoadingFallback />,
+  },
   {
     path: '/app',
     element: (

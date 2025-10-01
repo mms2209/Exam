@@ -16,6 +16,14 @@ export interface ExamPaperWithSubject extends ExamPaper {
   subject: ExamSubject
 }
 
+export type GradeLevel = '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12' | 'AS' | 'A2'
+
+export interface ExamPapersByGrade {
+  [grade: string]: {
+    [subjectName: string]: ExamPaperWithSubject[]
+  }
+}
+
 export interface AIResponse {
   explanation: string
   examples: string[]

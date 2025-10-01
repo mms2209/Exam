@@ -1,21 +1,39 @@
 import React from 'react'
 import { Outlet } from 'react-router-dom'
-import { Navbar } from './Navbar'
+import ModernNavbar from './ModernNavbar'
 import { Sidebar } from './Sidebar'
 import { useAuth } from '../contexts/AuthContext'
 import { AlertCircle } from 'lucide-react'
 
 interface LayoutProps {
   showSidebar?: boolean
+  modernLayout?: boolean
 }
 
-export function Layout({ showSidebar = true }: LayoutProps) {
+export function Layout({ showSidebar = true, modernLayout = false }: LayoutProps) {
   const { error } = useAuth()
   const isUsingCachedData = error?.includes('cached') || error?.includes('offline')
 
+  if (modernLayout) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <ModernNavbar />
+        {isUsingCachedData && (
+          <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2">
+            <div className="max-w-7xl mx-auto flex items-center gap-2 text-sm text-yellow-800">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>Using offline data. Some features may be limited.</span>
+            </div>
+          </div>
+        )}
+        <Outlet />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <ModernNavbar />
       {isUsingCachedData && (
         <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2">
           <div className="max-w-7xl mx-auto flex items-center gap-2 text-sm text-yellow-800">
