@@ -51,7 +51,6 @@ export function ExamPaperViewer() {
         timestamp: new Date().toISOString()
       }
 
-      setMessages(prev => [...prev, userMessage])
       setErrorMessage(null)
 
       const response = await examPapersApi.sendChatMessage({
@@ -61,21 +60,39 @@ export function ExamPaperViewer() {
         markingSchemeContent: 'Marking scheme content would be extracted here'
       })
 
-      return response
+      return { userMessage, response }
     },
-    onSuccess: (data) => {
-      const assistantMessage = data.message
-      setMessages(prev => [...prev, assistantMessage])
+    onSuccess: async (data) => {
+      const { userMessage, response } = data
+      const assistantMessage = response.message
 
-      if (!sessionId && paperId) {
-        examPapersApi.createChatSession(paperId).then(session => {
-          setSessionId(session.id)
-        })
+      setMessages(prev => {
+        const messageIds = new Set(prev.map(m => m.id))
+        const newMessages = []
+
+        if (!messageIds.has(userMessage.id)) {
+          newMessages.push(userMessage)
+        }
+        if (!messageIds.has(assistantMessage.id)) {
+          newMessages.push(assistantMessage)
+        }
+
+        return [...prev, ...newMessages]
+      })
+
+      let currentSessionId = sessionId
+      if (!currentSessionId && paperId) {
+        const session = await examPapersApi.createChatSession(paperId)
+        currentSessionId = session.id
+        setSessionId(currentSessionId)
+      }
+
+      if (currentSessionId) {
+        const updatedMessages = [...messages, userMessage, assistantMessage]
+        await examPapersApi.updateChatSession(currentSessionId, updatedMessages)
       }
     },
     onError: (error: any) => {
-      setMessages(prev => prev.slice(0, -1))
-
       let displayError = 'Unable to get a response from the AI tutor. Please try again.'
 
       if (error.status === 503) {

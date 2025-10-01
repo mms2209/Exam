@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/genai";
+import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "npm:@google/genai@0.21.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,8 +56,28 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const genAI = new GoogleGenAI({ apiKey });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash-exp",
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+      ],
+    });
 
     const prompt = `You are an expert exam tutor helping students understand exam questions and how to answer them effectively.
 
@@ -125,6 +145,10 @@ Format your response clearly with these exact headings.`;
       } else if (error.message.includes("network") || error.message.includes("fetch")) {
         errorMessage = "Network error. Please check your connection and try again.";
         errorCode = "NETWORK_ERROR";
+        statusCode = 503;
+      } else if (error.message.includes("not found") || error.message.includes("404")) {
+        errorMessage = "AI model not found or not supported. Please contact your administrator to update the model configuration.";
+        errorCode = "MODEL_NOT_FOUND";
         statusCode = 503;
       } else {
         errorMessage = error.message;
