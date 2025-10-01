@@ -78,8 +78,15 @@ export default function ModernExamPaperViewer() {
         })
 
         // Get signed URL for the PDF
+        console.log('📄 Paper file URL:', data.paper_file_url)
         const url = await getPaperUrl(data.paper_file_url)
-        setPaperUrl(url)
+        console.log('🔗 Generated signed URL:', url)
+        if (url) {
+          setPaperUrl(url)
+        } else {
+          console.error('❌ Failed to generate signed URL')
+          setError('Failed to load PDF file')
+        }
       }
     } catch (err: any) {
       console.error('Error fetching paper:', err)
@@ -435,10 +442,20 @@ export default function ModernExamPaperViewer() {
                 src={paperUrl}
                 className="w-full h-full border-0"
                 title="Exam Paper PDF"
+                onLoad={() => console.log('✅ PDF iframe loaded')}
+                onError={(e) => {
+                  console.error('❌ PDF iframe error:', e)
+                  setError('Failed to load PDF in viewer')
+                }}
               />
-            ) : (
+            ) : isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                <FileText className="h-16 w-16 text-gray-400 mb-4" />
+                <p className="text-gray-600">No PDF available</p>
               </div>
             )}
           </div>
