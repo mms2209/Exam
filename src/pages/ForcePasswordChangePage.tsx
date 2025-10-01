@@ -23,7 +23,7 @@ export function ForcePasswordChangePage() {
   useEffect(() => {
     // If user is not logged in or doesn't need password reset, redirect
     if (!authLoading && (!user || !user.needs_password_reset)) {
-      navigate('/dashboard', { replace: true })
+      navigate('/home', { replace: true })
     }
   }, [user, authLoading, navigate])
 

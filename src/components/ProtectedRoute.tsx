@@ -92,7 +92,7 @@ export function ProtectedRoute({
   }
 
   if (requireAdmin && !isAdmin(localUser)) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/home" replace />
   }
 
   if (requiredPermission && !hasPermission(localUser, requiredPermission.resource, requiredPermission.action)) {

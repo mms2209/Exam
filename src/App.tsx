@@ -336,7 +336,6 @@ const router = createBrowserRouter([
       },
     ],
   },
-  { path: '/dashboard', element: <Navigate to="/app/dashboard" replace /> },
   { path: '/admin/dashboard', element: <Navigate to="/app/admin/dashboard" replace /> },
   { path: '/admin/users', element: <Navigate to="/app/admin/users" replace /> },
   { path: '/admin/roles', element: <Navigate to="/app/admin/roles" replace /> },

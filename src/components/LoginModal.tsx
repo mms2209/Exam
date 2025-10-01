@@ -23,7 +23,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
       } else if (user.roles?.some((role: any) => role.name === 'admin')) {
         navigate('/admin/dashboard', { replace: true })
       } else {
-        navigate('/dashboard', { replace: true })
+        navigate('/home', { replace: true })
       }
     }
   }, [user, isLoading, navigate, onClose])
