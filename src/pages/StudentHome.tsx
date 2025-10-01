@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { Loader2, BookOpen, GraduationCap } from 'lucide-react'
+import ModernNavbar from '../components/ModernNavbar'
 import type { ExamPaperWithSubject, ExamPapersByGrade } from '../types/examPapers'
 
 export default function StudentHome() {
@@ -69,14 +70,19 @@ export default function StudentHome() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-      </div>
+      <>
+        <ModernNavbar />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+        </div>
+      </>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <ModernNavbar />
+      <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-4">
@@ -159,5 +165,6 @@ export default function StudentHome() {
         )}
       </div>
     </div>
+    </>
   )
 }
