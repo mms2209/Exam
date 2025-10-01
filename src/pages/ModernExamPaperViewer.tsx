@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Send, Loader2, FileText, MessageSquare, ChevronLeft, Menu, X } from 'lucide-react'
 import ModernNavbar from '../components/ModernNavbar'
+import { PDFViewer } from '../components/PDFViewer'
 import type { ExamPaperWithSubject, ChatMessage, AIResponse } from '../types/examPapers'
 
 type ViewMode = 'paper' | 'chat' | 'both'
@@ -463,16 +464,7 @@ export default function ModernExamPaperViewer() {
             viewMode === 'chat' ? 'hidden lg:flex' : 'flex'
           } ${viewMode === 'both' ? 'lg:flex' : ''}`}>
             {paperUrl ? (
-              <iframe
-                ref={pdfViewerRef}
-                src={`${paperUrl}#view=FitH`}
-                className="w-full h-full border-0"
-                title="Exam Paper PDF"
-                onLoad={() => console.log('✅ PDF iframe loaded')}
-                onError={(e) => {
-                  console.error('❌ PDF iframe error:', e)
-                }}
-              />
+              <PDFViewer url={paperUrl} />
             ) : isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
