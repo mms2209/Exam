@@ -90,7 +90,7 @@ export default function ModernNavbar() {
 
   const handleLogout = async () => {
     await logout()
-    navigate('/')
+    // Navigation is handled by logout function (forces reload)
   }
 
   const gradeOrder = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', 'AS', 'A2']

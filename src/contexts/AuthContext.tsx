@@ -336,21 +336,60 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signOut = async () => {
     console.log("🚪 Signing out user:", user?.id)
+
+    // Clear inactivity timer
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current)
       inactivityTimerRef.current = null
     }
+
+    // Clear all React Query cache
     if (user?.id) {
       queryClient.removeQueries({ queryKey: queryKeys.userProfile(user.id) })
     }
+    queryClient.clear()
+
+    // Clear local state
     setUserAndCache(null)
     setError(null)
+    setUsingCachedData(false)
+
+    // Clear all localStorage items related to auth
     try {
-      await supabase.auth.signOut()
+      localStorage.removeItem(PROFILE_CACHE_KEY)
+      localStorage.removeItem(PROFILE_TIMESTAMP_KEY)
+      // Clear any other cached data
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && (key.startsWith('supabase') || key.startsWith('auth') || key.includes('cache'))) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+      console.log("✅ LocalStorage cleared")
+    } catch (err) {
+      console.warn("⚠️ Failed to clear localStorage:", err)
+    }
+
+    // Clear sessionStorage
+    try {
+      sessionStorage.clear()
+      console.log("✅ SessionStorage cleared")
+    } catch (err) {
+      console.warn("⚠️ Failed to clear sessionStorage:", err)
+    }
+
+    // Sign out from Supabase
+    try {
+      await supabase.auth.signOut({ scope: 'local' })
       console.log("✅ Supabase sign out completed")
     } catch (err) {
       console.warn("⚠️ Sign out failed silently:", err)
     }
+
+    // Force page reload to clear any remaining state
+    window.location.href = '/'
   }
 
   const changePassword = async (newPassword: string, clearNeedsPasswordReset: boolean = false) => {
