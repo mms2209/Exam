@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { examPapersApi } from '../lib/dataFetching'
-import { ArrowLeft, Send, Loader2, FileText, MessageSquare } from 'lucide-react'
+import { ArrowLeft, Send, Loader2, FileText, MessageSquare, AlertCircle } from 'lucide-react'
 import type { ChatMessage, AIResponse } from '../types/examPapers'
 
 export function ExamPaperViewer() {
@@ -12,6 +12,7 @@ export function ExamPaperViewer() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const { data: paper, isLoading: paperLoading } = useQuery({
     queryKey: ['exam-paper', paperId],
@@ -51,6 +52,7 @@ export function ExamPaperViewer() {
       }
 
       setMessages(prev => [...prev, userMessage])
+      setErrorMessage(null)
 
       const response = await examPapersApi.sendChatMessage({
         paperId: paperId!,
@@ -70,6 +72,21 @@ export function ExamPaperViewer() {
           setSessionId(session.id)
         })
       }
+    },
+    onError: (error: any) => {
+      setMessages(prev => prev.slice(0, -1))
+
+      let displayError = 'Unable to get a response from the AI tutor. Please try again.'
+
+      if (error.status === 503) {
+        displayError = 'AI service is currently unavailable. Please contact your administrator to configure the service.'
+      } else if (error.status === 429) {
+        displayError = 'AI service quota exceeded. Please try again later.'
+      } else if (error.message) {
+        displayError = error.message
+      }
+
+      setErrorMessage(displayError)
     }
   })
 
@@ -153,6 +170,24 @@ export function ExamPaperViewer() {
           </div>
 
           <div className="flex-1 overflow-auto p-4 space-y-4">
+            {errorMessage && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm text-red-800 font-medium">Error</p>
+                  <p className="text-sm text-red-700 mt-1">{errorMessage}</p>
+                </div>
+                <button
+                  onClick={() => setErrorMessage(null)}
+                  className="text-red-400 hover:text-red-600"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+
             {messages.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <MessageSquare className="h-12 w-12 mx-auto mb-3 text-gray-400" />

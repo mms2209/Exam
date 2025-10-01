@@ -7,6 +7,8 @@ A comprehensive full-stack web application for Islamic finance operations with r
 - **Authentication & Authorization**: Secure login with email/password using Supabase Auth
 - **Role-Based Access Control**: Admin, Member, and Viewer roles with granular permissions
 - **User Management**: Complete CRUD operations for user accounts via admin panel
+- **Exam Papers Management**: Upload, view, and manage exam papers with marking schemes
+- **AI-Powered Tutor**: Interactive AI chatbot for exam question assistance using Google Gemini
 - **Dashboard Analytics**: Role-specific dashboards with relevant metrics and quick actions
 - **Edge Functions**: Server-side API endpoints for secure admin operations
 - **Responsive Design**: Modern, professional UI optimized for desktop and tablet use
@@ -38,22 +40,47 @@ A comprehensive full-stack web application for Islamic finance operations with r
    - Fill in your Supabase project details:
      - `VITE_SUPABASE_URL`: Your Supabase project URL
      - `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
-     - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key (for Edge Functions)
 
 3. **Set up Supabase**:
    - Click "Connect to Supabase" button in the top right
    - The database schema will be created automatically via migrations
    - Edge functions are deployed automatically
 
-4. **Create test users** (optional):
+4. **Configure AI Tutor (Required for Exam Chat Feature)**:
+
+   To enable the AI-powered exam tutor, you need to configure the Google Gemini API key:
+
+   a. **Get a Gemini API Key**:
+      - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+      - Sign in with your Google account
+      - Click "Create API Key" or "Get API Key"
+      - Copy your API key
+
+   b. **Add the API Key to Supabase**:
+      - Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+      - Select your project
+      - Navigate to **Project Settings** → **Edge Functions** → **Secrets**
+      - Click "Add Secret"
+      - Name: `GEMINI_API_KEY`
+      - Value: Paste your Gemini API key
+      - Click "Save"
+
+   c. **Verify the Configuration**:
+      - The AI tutor will now be functional in the Exam Paper Viewer
+      - If the API key is missing, users will see a friendly error message
+
+   **Note**: The Gemini API has a generous free tier. For production use, monitor your usage in the Google AI Studio dashboard.
+
+5. **Create test users** (optional):
    You can create test users through the admin panel or directly in Supabase:
    - Admin user: `admin@example.com` / `password123`
    - Member user: `member@example.com` / `password123`
 
-5. **Start development server**:
+6. **Start development server**:
    ```bash
    npm run dev
    ```
+
 
 ## User Roles & Permissions
 
@@ -118,12 +145,32 @@ Helper functions for permission checking:
 ## API Endpoints
 
 ### Edge Functions
+
+**Admin Management**:
 - `POST /functions/v1/admin-users`: Create user
 - `GET /functions/v1/admin-users`: List users
 - `PUT /functions/v1/admin-users/{id}`: Update user
 - `DELETE /functions/v1/admin-users/{id}`: Delete user
+- `GET /functions/v1/admin-roles`: List roles
+- `POST /functions/v1/admin-roles`: Create role
+- `PUT /functions/v1/admin-roles/{id}`: Update role
+- `DELETE /functions/v1/admin-roles/{id}`: Delete role
+- `GET /functions/v1/admin-permissions`: List permissions
+- `POST /functions/v1/admin-permissions`: Create permission
+- `PUT /functions/v1/admin-permissions/{id}`: Update permission
+- `DELETE /functions/v1/admin-permissions/{id}`: Delete permission
 
-All endpoints require admin authorization and include proper error handling.
+**Authentication**:
+- `POST /functions/v1/update-password`: Update user password
+- `POST /functions/v1/validate-password`: Validate password strength
+
+**AI Features**:
+- `POST /functions/v1/exam-chat-ai`: AI-powered exam tutor chatbot
+  - Requires `GEMINI_API_KEY` to be configured in Supabase secrets
+  - Returns structured responses with explanations, examples, and solutions
+  - Handles errors gracefully with user-friendly messages
+
+All endpoints require proper authorization and include comprehensive error handling.
 
 ## Development
 

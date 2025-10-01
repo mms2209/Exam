@@ -32,7 +32,16 @@ Deno.serve(async (req: Request) => {
   try {
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not set");
+      return new Response(
+        JSON.stringify({
+          error: "AI service not configured. Please contact your administrator to set up the GEMINI_API_KEY.",
+          errorCode: "API_KEY_MISSING"
+        }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     const { question, paperContent, markingSchemeContent }: ChatRequest = await req.json();
@@ -99,10 +108,37 @@ Format your response clearly with these exact headings.`;
     );
   } catch (error) {
     console.error("Error in exam-chat-ai:", error);
+
+    let errorMessage = "An unexpected error occurred while processing your request.";
+    let errorCode = "UNKNOWN_ERROR";
+    let statusCode = 500;
+
+    if (error.message) {
+      if (error.message.includes("API key")) {
+        errorMessage = "Invalid API key. Please contact your administrator.";
+        errorCode = "INVALID_API_KEY";
+        statusCode = 503;
+      } else if (error.message.includes("quota") || error.message.includes("limit")) {
+        errorMessage = "AI service quota exceeded. Please try again later or contact your administrator.";
+        errorCode = "QUOTA_EXCEEDED";
+        statusCode = 429;
+      } else if (error.message.includes("network") || error.message.includes("fetch")) {
+        errorMessage = "Network error. Please check your connection and try again.";
+        errorCode = "NETWORK_ERROR";
+        statusCode = 503;
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
     return new Response(
-      JSON.stringify({ error: error.message || "An error occurred" }),
+      JSON.stringify({
+        error: errorMessage,
+        errorCode,
+        details: error.message
+      }),
       {
-        status: 500,
+        status: statusCode,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
