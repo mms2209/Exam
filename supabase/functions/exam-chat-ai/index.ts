@@ -1,4 +1,4 @@
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "npm:@google/genai@0.21.0";
+import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,7 +58,7 @@ Deno.serve(async (req: Request) => {
 
     const genAI = new GoogleGenAI({ apiKey });
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash",
       safetySettings: [
         {
           category: HarmCategory.HARM_CATEGORY_HARASSMENT,
