@@ -39,9 +39,19 @@ export function PDFViewer({ url }: PDFViewerProps) {
       setIsLoading(true)
       setError(null)
 
+      // Fetch the PDF as a blob first to avoid CORS/URL issues
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error('Failed to fetch PDF')
+      }
+
+      const blob = await response.blob()
+      const arrayBuffer = await blob.arrayBuffer()
+
+      // Load PDF from the array buffer instead of URL
       const loadingTask = pdfjsLib.getDocument({
-        url,
-        cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+        data: arrayBuffer,
+        cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLibImport.version}/cmaps/`,
         cMapPacked: true,
       })
       const pdf = await loadingTask.promise
