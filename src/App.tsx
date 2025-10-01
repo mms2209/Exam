@@ -158,7 +158,7 @@ const router = createBrowserRouter([
     hydrateFallbackElement: <AppLoadingFallback />,
   },
   {
-    path: '/exam-paper/:paperId',
+    path: '/exam-papers/:paperId',
     element: (
       <ProtectedRoute requiredPermission={{ resource: 'exam_papers', action: 'view' }}>
         <Suspense fallback={<AppLoadingFallback />}>
