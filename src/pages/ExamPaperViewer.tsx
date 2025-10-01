@@ -377,7 +377,9 @@ Error: ${paperWithText.extraction_error || 'Unknown error'}
                           {aiResponse.explanation && (
                             <div>
                               <h4 className="font-semibold mb-1">Explanation</h4>
-                              <p className="text-gray-700">{aiResponse.explanation}</p>
+                              <div className="text-gray-700 whitespace-pre-wrap font-mono text-xs leading-relaxed">
+                                {aiResponse.explanation}
+                              </div>
                             </div>
                           )}
 
@@ -406,7 +408,9 @@ Error: ${paperWithText.extraction_error || 'Unknown error'}
                           {aiResponse.solution && (
                             <div>
                               <h4 className="font-semibold mb-1">Solution</h4>
-                              <p className="text-gray-700 whitespace-pre-wrap">{aiResponse.solution}</p>
+                              <div className="text-gray-700 whitespace-pre-wrap font-mono text-xs leading-relaxed">
+                                {aiResponse.solution}
+                              </div>
                             </div>
                           )}
                         </div>

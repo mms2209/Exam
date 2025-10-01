@@ -113,7 +113,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const prompt = `You are an expert exam tutor helping students understand exam questions and how to answer them effectively.
+    const prompt = `You are an expert mathematics and exam tutor helping students understand exam questions and how to answer them effectively.
 
 ${questionContext ? questionContext : (paperContent || "No paper content provided")}
 
@@ -121,30 +121,60 @@ ${focusedMarkingScheme || "No marking scheme provided"}
 
 The student is asking: "${question}"
 
-${hasPaperContent ? `IMPORTANT: You have been provided with the ${questionNumber ? `specific question ${questionNumber}` : 'complete exam paper'} content above. Read through it carefully and reference specific parts of the question in your response.` : 'Note: The exam paper content is not available. Provide general educational guidance.'}
+CRITICAL INSTRUCTIONS FOR MATHEMATICAL CONTENT:
+- When writing mathematical expressions, use plain text notation that is clear and unambiguous
+- Use standard notation: x^2 for x squared, sqrt(x) for square root, integral signs, fractions as a/b
+- Use spacing and line breaks to make formulas readable
+- Show step-by-step working with clear explanations at each step
+- Preserve mathematical notation exactly as it appears in the exam paper and marking scheme
 
-${hasMarkingScheme ? `IMPORTANT: You have been provided with the ${questionNumber ? `marking scheme for question ${questionNumber}` : 'complete marking scheme'} above. Use it to provide accurate guidance on how marks are awarded and what examiners are looking for. Quote specific marking points from the scheme.` : 'Note: The marking scheme is not available. Provide general best practices for answering such questions.'}
+${hasPaperContent ? `IMPORTANT: You have been provided with the ${questionNumber ? `specific question ${questionNumber}` : 'complete exam paper'} content above. Read through it carefully and reference specific parts of the question in your response. If there are mathematical formulas, preserve them exactly as shown.` : 'Note: The exam paper content is not available. Provide general educational guidance.'}
+
+${hasMarkingScheme ? `CRITICAL: You have been provided with the ${questionNumber ? `marking scheme for question ${questionNumber}` : 'complete marking scheme'} above.
+
+YOU MUST STRICTLY FOLLOW THE MARKING SCHEME:
+1. Identify EVERY marking point mentioned in the scheme
+2. Your solution MUST address EVERY SINGLE marking point - do not skip any
+3. Quote the marking points EXACTLY as they appear in the scheme
+4. Show the marks allocated for each point (e.g., "[2 marks]")
+5. Structure your solution to match the marking scheme structure
+6. If the marking scheme shows specific steps or formulas, include those EXACT steps
+7. Your solution should earn FULL MARKS based on the marking scheme provided
+
+If the marking scheme is not clear or seems incomplete, still provide a comprehensive answer based on what is available.` : 'Note: The marking scheme is not available. Provide general best practices for answering such questions.'}
 
 Your task is to help the student understand this question and how to answer it correctly. Please provide a comprehensive educational response in the following structured format:
 
 ## Explanation
-${questionNumber ? `First, quote the exact text of question ${questionNumber} from the exam paper, then provide a clear explanation of what it's asking.` : 'Provide a clear explanation of what the question is asking and the key concepts involved.'} Break down the question into understandable parts. Explain any technical terms or concepts that the student needs to know.
+${questionNumber ? `First, quote the exact text of question ${questionNumber} from the exam paper (preserve all mathematical notation), then provide a clear explanation of what it's asking.` : 'Provide a clear explanation of what the question is asking and the key concepts involved.'} Break down the question into understandable parts. Explain any technical terms or concepts that the student needs to know. If there are formulas, explain what each symbol represents.
 
 ## Examples
-Provide 2-3 relevant, concrete examples that illustrate the concepts or demonstrate similar problems and their solutions. Make these examples specific and practical.
+Provide 2-3 relevant, concrete examples that illustrate the concepts or demonstrate similar problems and their solutions. Make these examples specific and practical. Show full working for any calculations.
 
 ## How to Get Full Marks
-${hasMarkingScheme ? 'Based on the marking scheme provided, list the specific marking points and what the examiner is looking for.' : 'Provide clear bullet points on exactly what a student needs to include in their answer to achieve full marks.'} Focus on:
-- Key points that must be mentioned (${hasMarkingScheme ? 'quote from marking scheme' : 'based on best practices'})
+${hasMarkingScheme ? 'CRITICAL: List EVERY SINGLE marking point from the marking scheme. Copy the exact wording from the scheme and show marks allocated.' : 'Provide clear bullet points on exactly what a student needs to include in their answer to achieve full marks.'}
+
+YOU MUST INCLUDE:
+- Every marking point from the scheme (quote exactly)
+- Marks allocated for each point (if shown)
 - Important terminology to use
+- Required formulas or methods
 - Common mistakes to avoid
-- How to structure the answer
-${hasMarkingScheme ? '- Marks allocated for each point (if shown in marking scheme)' : ''}
+- How to structure the answer to match marking expectations
+
+${hasMarkingScheme ? 'DO NOT add your own marking criteria - use ONLY what is in the provided marking scheme.' : ''}
 
 ## Solution
-Provide a complete, well-structured model answer to the question that demonstrates best practices and would receive full marks. ${hasMarkingScheme ? 'Ensure your solution addresses every marking point from the scheme.' : 'Structure your answer logically with clear headings and well-explained reasoning.'}
+Provide a complete, step-by-step model answer that would receive FULL MARKS. ${hasMarkingScheme ? 'CRITICAL: Your solution MUST address EVERY marking point from the scheme in the exact order shown. After each step, indicate which marking point(s) you are addressing and the marks earned. Show all working clearly.' : 'Structure your answer logically with clear headings and well-explained reasoning. Show all steps for any calculations.'}
 
-IMPORTANT: Format your response using these exact headings. Be specific, educational, and helpful. ${hasPaperContent ? 'Make sure to demonstrate that you have read and understood the exam paper by quoting relevant parts of the question.' : ''} ${hasMarkingScheme ? 'Reference the marking scheme explicitly in your response.' : ''}`;
+For mathematical solutions:
+- Number each step clearly (Step 1, Step 2, etc.)
+- Show all working - never skip steps
+- State formulas before using them
+- Include units where applicable
+- Box or highlight final answers
+
+IMPORTANT: Format your response using these exact headings. Be specific, educational, and helpful. ${hasPaperContent ? 'Make sure to demonstrate that you have read and understood the exam paper by quoting relevant parts of the question.' : ''} ${hasMarkingScheme ? 'Your solution MUST match the marking scheme exactly - this is non-negotiable.' : ''}`;
 
     console.log('[exam-chat-ai] Sending prompt to AI model...');
     console.log('[exam-chat-ai] Prompt length:', prompt.length);
