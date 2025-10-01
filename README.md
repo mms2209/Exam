@@ -1,4 +1,4 @@
-# Islamic Finance Staff Management System
+# Student AI Management System
 
 A comprehensive full-stack web application for Islamic finance operations with role-based access control, user management, and administrative features.
 
