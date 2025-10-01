@@ -5,8 +5,16 @@ import { authApi, userProfileApi } from '../lib/dataFetching'
 import { queryClient, queryKeys } from '../lib/queryClient'
 import { clearPermissionCache } from '../utils/permissions'
 
-// Inactivity timeout: 15 minutes
 const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000
+const CACHE_VALIDITY_MS = 5 * 60 * 1000
+const SESSION_CACHE_KEY = 'auth_session_cache'
+const PROFILE_CACHE_KEY = 'cachedUserProfile'
+const CACHE_TIMESTAMP_KEY = 'cache_timestamp'
+
+interface CachedSession {
+  userId: string
+  timestamp: number
+}
 
 interface AuthContextType {
   user: any | null
@@ -27,30 +35,62 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<any | null>(() => {
-    // Try to load cached user from localStorage
     try {
-      const cached = localStorage.getItem('cachedUserProfile')
+      const cached = localStorage.getItem(PROFILE_CACHE_KEY)
       return cached ? JSON.parse(cached) : null
     } catch (err) {
       console.warn('⚠️ Failed to parse cached user profile', err)
       return null
     }
   })
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = localStorage.getItem(PROFILE_CACHE_KEY)
+      return !cached
+    } catch {
+      return true
+    }
+  })
   const [error, setError] = useState<string | null>(null)
+  const [usingCachedData, setUsingCachedData] = useState(false)
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Helper to set user both in state and in localStorage
   const setUserAndCache = (profile: any | null) => {
     setUser(profile)
     if (profile) {
       try {
-        localStorage.setItem('cachedUserProfile', JSON.stringify(profile))
+        localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile))
+        localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
+        setUsingCachedData(false)
       } catch (err) {
         console.warn('⚠️ Failed to cache user profile in localStorage', err)
       }
     } else {
-      localStorage.removeItem('cachedUserProfile')
+      localStorage.removeItem(PROFILE_CACHE_KEY)
+      localStorage.removeItem(CACHE_TIMESTAMP_KEY)
+      localStorage.removeItem(SESSION_CACHE_KEY)
+      setUsingCachedData(false)
+    }
+  }
+
+  const isCacheValid = (): boolean => {
+    try {
+      const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY)
+      if (!timestamp) return false
+      const age = Date.now() - parseInt(timestamp, 10)
+      return age < CACHE_VALIDITY_MS
+    } catch {
+      return false
+    }
+  }
+
+  const getCachedProfile = (): any | null => {
+    try {
+      const cached = localStorage.getItem(PROFILE_CACHE_KEY)
+      return cached ? JSON.parse(cached) : null
+    } catch (err) {
+      console.warn('⚠️ Failed to get cached profile', err)
+      return null
     }
   }
 
@@ -86,7 +126,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, [user, resetInactivityTimer])
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string, useCacheOnError = true) => {
     console.log("🔍 Fetching user profile for:", userId)
     try {
       const userProfile = await userProfileApi.fetchUserProfile(userId)
@@ -94,6 +134,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return userProfile
     } catch (err) {
       console.error("❌ Failed to fetch user profile:", err)
+
+      if (useCacheOnError) {
+        const cachedProfile = getCachedProfile()
+        if (cachedProfile && cachedProfile.id === userId) {
+          console.log("📦 Using cached profile due to database error")
+          setUsingCachedData(true)
+          return cachedProfile
+        }
+      }
+
       throw err
     }
   }
@@ -101,106 +151,139 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     const init = async () => {
       console.log("🚀 Auth init starting...")
-      setLoading(true)
-      let checkpoints = {
-        session: false,
-        accessToken: false,
-        refreshToken: false,
-        profile: false,
-        activeFlag: false
+
+      const cachedProfile = getCachedProfile()
+      const cacheIsValid = isCacheValid()
+
+      if (cachedProfile && cacheIsValid) {
+        console.log("📦 Using valid cached profile, starting in background refresh mode")
+        setUser(cachedProfile)
+        setLoading(false)
+      } else if (cachedProfile) {
+        console.log("📦 Using stale cached profile while validating session")
+        setUser(cachedProfile)
+      } else {
+        console.log("🔄 No cached profile, showing loading state")
+        setLoading(true)
       }
 
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
         if (sessionError) {
           console.error("❌ Session error:", sessionError.message)
+
+          if (cachedProfile) {
+            console.warn("⚠️ Session error but cached profile exists, keeping user signed in with cached data")
+            setUsingCachedData(true)
+            setLoading(false)
+            return
+          }
+
           await supabase.auth.signOut()
           setUserAndCache(null)
+          setLoading(false)
           return
         }
 
-        if (session) {
-          checkpoints.session = true
-          if (session.access_token) checkpoints.accessToken = true
-          if (session.refresh_token) checkpoints.refreshToken = true
-          console.log("✅ Session info:", {
-            accessToken: !!session.access_token,
-            refreshToken: !!session.refresh_token,
-            userId: session.user?.id
-          })
+        if (session?.user) {
+          console.log("✅ Valid session found, refreshing profile")
 
-          if (session.user) {
+          try {
             const profile = await queryClient.fetchQuery({
               queryKey: queryKeys.userProfile(session.user.id),
-              queryFn: () => fetchUserProfile(session.user.id),
-              staleTime: Infinity,
-              gcTime: Infinity,
+              queryFn: () => fetchUserProfile(session.user.id, true),
+              staleTime: 5 * 60 * 1000,
+              gcTime: 15 * 60 * 1000,
             })
 
-            if (profile) checkpoints.profile = true
             if (profile?.is_active) {
-              checkpoints.activeFlag = true
               setUserAndCache(profile)
-              console.log("✅ User is active and set in state")
+              console.log("✅ User profile refreshed successfully")
             } else {
               console.warn("⚠️ User inactive, signing out")
               await supabase.auth.signOut()
               setUserAndCache(null)
             }
+          } catch (profileError) {
+            console.error("❌ Profile fetch failed:", profileError)
+
+            if (cachedProfile && cachedProfile.id === session.user.id) {
+              console.log("📦 Database error, continuing with cached profile")
+              setUser(cachedProfile)
+              setUsingCachedData(true)
+            } else {
+              console.error("❌ No valid cache, signing out")
+              await supabase.auth.signOut()
+              setUserAndCache(null)
+            }
           }
         } else {
-          console.log("ℹ️ No session found")
-          await supabase.auth.signOut()
+          console.log("ℹ️ No session found, clearing cache")
           setUserAndCache(null)
         }
       } catch (err) {
-        console.error("❌ Error during init:", err)
-        await supabase.auth.signOut()
-        setUserAndCache(null)
-      } finally {
-        console.log("📊 Init checkpoints:", checkpoints)
-        const obtained = Object.values(checkpoints).filter(Boolean).length
-        const total = Object.keys(checkpoints).length
-        console.log(`📊 Progress: ${obtained}/${total} info items obtained.`)
-        for (const [key, value] of Object.entries(checkpoints)) {
-          console.log(`   - ${key}: ${value ? "✅ success" : "❌ failed"}`)
+        console.error("❌ Critical error during init:", err)
+
+        if (cachedProfile) {
+          console.log("📦 Critical error but cached profile exists, using cached data")
+          setUser(cachedProfile)
+          setUsingCachedData(true)
+        } else {
+          setUserAndCache(null)
         }
-        console.log("✅ Auth init finished")
+      } finally {
         setLoading(false)
+        console.log("✅ Auth init finished")
       }
     }
 
     init()
 
-    const { data: subscription } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("🔄 Auth state change:", event)
-      if (session?.user) {
-        try {
-          const profile = await queryClient.fetchQuery({
-            queryKey: queryKeys.userProfile(session.user.id),
-            queryFn: () => fetchUserProfile(session.user.id),
-            staleTime: Infinity,
-            gcTime: Infinity,
-          })
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      (async () => {
+        console.log("🔄 Auth state change:", event)
 
-          if (profile?.is_active) {
-            setUserAndCache(profile)
-            console.log("✅ User updated after state change:", profile)
-          } else {
-            console.warn("⚠️ User inactive on state change, signing out")
-            await supabase.auth.signOut()
-            setUserAndCache(null)
+        if (event === 'SIGNED_OUT') {
+          if (user?.id) {
+            queryClient.removeQueries({ queryKey: queryKeys.userProfile(user.id) })
           }
-        } catch (err) {
-          console.error("❌ Failed to refresh profile on state change:", err)
+          setUserAndCache(null)
+          setLoading(false)
+          return
         }
-      } else {
-        if (user?.id) {
-          queryClient.removeQueries({ queryKey: queryKeys.userProfile(user.id) })
+
+        if (session?.user) {
+          try {
+            const profile = await queryClient.fetchQuery({
+              queryKey: queryKeys.userProfile(session.user.id),
+              queryFn: () => fetchUserProfile(session.user.id, true),
+              staleTime: 5 * 60 * 1000,
+              gcTime: 15 * 60 * 1000,
+            })
+
+            if (profile?.is_active) {
+              setUserAndCache(profile)
+              console.log("✅ User updated after state change")
+            } else {
+              console.warn("⚠️ User inactive on state change, signing out")
+              await supabase.auth.signOut()
+              setUserAndCache(null)
+            }
+          } catch (err) {
+            console.error("❌ Failed to refresh profile on state change:", err)
+
+            const cachedProfile = getCachedProfile()
+            if (cachedProfile && cachedProfile.id === session.user.id) {
+              console.log("📦 Using cached profile after state change error")
+              setUser(cachedProfile)
+              setUsingCachedData(true)
+            }
+          }
         }
-        setUserAndCache(null)
-      }
-      if (loading) setLoading(false)
+
+        if (loading) setLoading(false)
+      })()
     })
 
     return () => {
@@ -212,26 +295,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     console.log("🔑 Signing in with email:", email)
     setLoading(true)
     setError(null)
+    setUsingCachedData(false)
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
 
       if (data.user) {
         console.log("✅ User signed in:", data.user.id)
-        const profile = await queryClient.fetchQuery({
-          queryKey: queryKeys.userProfile(data.user.id),
-          queryFn: () => fetchUserProfile(data.user.id),
-          staleTime: Infinity,
-          gcTime: Infinity,
-        })
 
-        if (!profile?.is_active) {
-          console.warn("⚠️ User inactive, forcing sign out")
+        try {
+          const profile = await queryClient.fetchQuery({
+            queryKey: queryKeys.userProfile(data.user.id),
+            queryFn: () => fetchUserProfile(data.user.id, false),
+            staleTime: 5 * 60 * 1000,
+            gcTime: 15 * 60 * 1000,
+          })
+
+          if (!profile?.is_active) {
+            console.warn("⚠️ User inactive, forcing sign out")
+            await supabase.auth.signOut()
+            throw new Error("Account is inactive")
+          }
+
+          setUserAndCache(profile)
+        } catch (profileError: any) {
+          console.error("❌ Failed to fetch profile after sign in:", profileError)
           await supabase.auth.signOut()
-          throw new Error("Account is inactive")
+          throw new Error("Failed to load user profile. Please try again.")
         }
-
-        setUserAndCache(profile)
       }
     } catch (err: any) {
       console.error("❌ Sign in error:", err)
@@ -284,37 +376,52 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.log("ℹ️ No user to refresh")
       return
     }
+
     try {
       const { data: { user: sessionUser }, error } = await supabase.auth.getUser()
       if (error) {
         console.error("❌ Failed to get session user:", error.message)
+        console.log("📦 Keeping existing cached profile")
+        setUsingCachedData(true)
         return
       }
+
       if (sessionUser) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.userProfile(sessionUser.id) })
-        const profile = await queryClient.fetchQuery({
-          queryKey: queryKeys.userProfile(sessionUser.id),
-          queryFn: () => fetchUserProfile(sessionUser.id),
-          staleTime: Infinity,
-          gcTime: Infinity,
-        })
-        if (!profile?.is_active) {
-          console.warn("⚠️ User inactive on refresh, signing out")
-          setUserAndCache(null)
-          await supabase.auth.signOut()
-          return
+        try {
+          queryClient.invalidateQueries({ queryKey: queryKeys.userProfile(sessionUser.id) })
+          const profile = await queryClient.fetchQuery({
+            queryKey: queryKeys.userProfile(sessionUser.id),
+            queryFn: () => fetchUserProfile(sessionUser.id, true),
+            staleTime: 5 * 60 * 1000,
+            gcTime: 15 * 60 * 1000,
+          })
+
+          if (!profile?.is_active) {
+            console.warn("⚠️ User inactive on refresh, signing out")
+            setUserAndCache(null)
+            await supabase.auth.signOut()
+            return
+          }
+
+          setUserAndCache(profile)
+          clearPermissionCache()
+          resetInactivityTimer()
+          console.log("✅ User profile refreshed")
+        } catch (profileError) {
+          console.error("❌ Profile fetch failed during refresh:", profileError)
+          console.log("📦 Keeping existing cached profile")
+          setUsingCachedData(true)
+          setError("Using offline data. Some features may be limited.")
         }
-        setUserAndCache(profile)
-        clearPermissionCache()
-        resetInactivityTimer()
-        console.log("✅ User profile refreshed")
       } else {
         console.warn("⚠️ No session user on refresh, clearing state")
         setUserAndCache(null)
       }
     } catch (err) {
       console.error("❌ Refresh user failed:", err)
-      setError("Failed to refresh user profile. Using existing data.")
+      console.log("📦 Keeping existing cached profile")
+      setUsingCachedData(true)
+      setError("Failed to refresh. Using cached data.")
     }
   }
 

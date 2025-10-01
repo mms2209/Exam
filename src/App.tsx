@@ -42,7 +42,7 @@ const AppLoadingFallback = () => (
 function HomeRoute() {
   const { user, loading } = useAuth()
 
-  if (loading) {
+  if (loading && !user) {
     return <AppLoadingFallback />
   }
 
