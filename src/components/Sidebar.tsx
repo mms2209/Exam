@@ -11,6 +11,8 @@ import {
   BarChart3,
   Shield,
   Key,
+  BookOpen,
+  Upload,
 } from 'lucide-react'
 
 interface NavItem {
@@ -68,6 +70,18 @@ const navigation: NavItem[] = [
     href: '/analytics',
     icon: BarChart3,
     permission: { resource: 'reports', action: 'view' }
+  },
+  {
+    name: 'Exam Papers',
+    href: '/exam-papers',
+    icon: BookOpen,
+    permission: { resource: 'exam_papers', action: 'view' }
+  },
+  {
+    name: 'Manage Papers',
+    href: '/admin/exam-papers',
+    icon: Upload,
+    permission: { resource: 'exam_papers', action: 'manage' }
   },
   {
     name: 'Settings',

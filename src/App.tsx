@@ -17,6 +17,9 @@ const AdminUsers = React.lazy(() => import('./pages/AdminUsers').then(module => 
 const AdminRoles = React.lazy(() => import('./pages/AdminRoles').then(module => ({ default: module.AdminRoles })))
 const AdminPermissions = React.lazy(() => import('./pages/AdminPermissions').then(module => ({ default: module.AdminPermissions })))
 const ProfilePage = React.lazy(() => import('./pages/ProfilePage').then(module => ({ default: module.ProfilePage })))
+const AdminExamPapers = React.lazy(() => import('./pages/AdminExamPapers').then(module => ({ default: module.AdminExamPapers })))
+const StudentExamPapers = React.lazy(() => import('./pages/StudentExamPapers').then(module => ({ default: module.StudentExamPapers })))
+const ExamPaperViewer = React.lazy(() => import('./pages/ExamPaperViewer').then(module => ({ default: module.ExamPaperViewer })))
 
 const PageLoadingFallback = () => (
   <div className="flex items-center justify-center py-12">
@@ -271,6 +274,39 @@ const router = createBrowserRouter([
               <p className="text-gray-600 mt-2">Coming soon...</p>
             </div>
           </Suspense>
+        ),
+        hydrateFallbackElement: <PageLoadingFallback />,
+      },
+      {
+        path: 'admin/exam-papers',
+        element: (
+          <ProtectedRoute requiredPermission={{ resource: 'exam_papers', action: 'manage' }}>
+            <Suspense fallback={<PageLoadingFallback />}>
+              <AdminExamPapers />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+        hydrateFallbackElement: <PageLoadingFallback />,
+      },
+      {
+        path: 'exam-papers',
+        element: (
+          <ProtectedRoute requiredPermission={{ resource: 'exam_papers', action: 'view' }}>
+            <Suspense fallback={<PageLoadingFallback />}>
+              <StudentExamPapers />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+        hydrateFallbackElement: <PageLoadingFallback />,
+      },
+      {
+        path: 'exam-papers/:paperId',
+        element: (
+          <ProtectedRoute requiredPermission={{ resource: 'exam_papers', action: 'view' }}>
+            <Suspense fallback={<PageLoadingFallback />}>
+              <ExamPaperViewer />
+            </Suspense>
+          </ProtectedRoute>
         ),
         hydrateFallbackElement: <PageLoadingFallback />,
       },

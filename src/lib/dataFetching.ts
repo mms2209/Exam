@@ -438,3 +438,229 @@ export const fetchRolePermissions = async (roleIds: string[]) => {
 
   return data;
 };
+
+export const examPapersApi = {
+  async getSubjects() {
+    const { data, error } = await supabase
+      .from('exam_subjects')
+      .select('*')
+      .order('name');
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async createSubject(name: string, description?: string) {
+    const { data, error } = await supabase
+      .from('exam_subjects')
+      .insert({ name, description })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getExamPapers() {
+    const { data, error } = await supabase
+      .from('exam_papers')
+      .select(`
+        *,
+        subject:exam_subjects(*)
+      `)
+      .order('year', { ascending: false })
+      .order('paper_number');
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getExamPaperById(id: string) {
+    const { data, error } = await supabase
+      .from('exam_papers')
+      .select(`
+        *,
+        subject:exam_subjects(*)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async uploadExamPaper(
+    file: File,
+    markingScheme: File,
+    metadata: {
+      subjectId: string
+      year: number
+      paperNumber: string
+      title?: string
+    }
+  ) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const paperPath = `${metadata.subjectId}/${metadata.year}/${metadata.paperNumber}_paper_${Date.now()}.pdf`;
+    const schemePath = `${metadata.subjectId}/${metadata.year}/${metadata.paperNumber}_scheme_${Date.now()}.pdf`;
+
+    const { error: paperError } = await supabase.storage
+      .from('exam-papers')
+      .upload(paperPath, file);
+
+    if (paperError) throw paperError;
+
+    const { error: schemeError } = await supabase.storage
+      .from('marking-schemes')
+      .upload(schemePath, markingScheme);
+
+    if (schemeError) {
+      await supabase.storage.from('exam-papers').remove([paperPath]);
+      throw schemeError;
+    }
+
+    const { data, error } = await supabase
+      .from('exam_papers')
+      .insert({
+        subject_id: metadata.subjectId,
+        year: metadata.year,
+        paper_number: metadata.paperNumber,
+        title: metadata.title,
+        paper_file_url: paperPath,
+        marking_scheme_file_url: schemePath,
+        uploaded_by: user.id
+      })
+      .select()
+      .single();
+
+    if (error) {
+      await supabase.storage.from('exam-papers').remove([paperPath]);
+      await supabase.storage.from('marking-schemes').remove([schemePath]);
+      throw error;
+    }
+
+    return data;
+  },
+
+  async deleteExamPaper(id: string) {
+    const { data: paper, error: fetchError } = await supabase
+      .from('exam_papers')
+      .select('paper_file_url, marking_scheme_file_url')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const { error } = await supabase
+      .from('exam_papers')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    if (paper) {
+      await supabase.storage.from('exam-papers').remove([paper.paper_file_url]);
+      await supabase.storage.from('marking-schemes').remove([paper.marking_scheme_file_url]);
+    }
+
+    return true;
+  },
+
+  async trackPaperAccess(paperId: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: existing } = await supabase
+      .from('student_paper_interactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('paper_id', paperId)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('student_paper_interactions')
+        .update({
+          last_accessed_at: new Date().toISOString(),
+          access_count: existing.access_count + 1
+        })
+        .eq('id', existing.id);
+    } else {
+      await supabase
+        .from('student_paper_interactions')
+        .insert({
+          user_id: user.id,
+          paper_id: paperId,
+          access_count: 1
+        });
+    }
+  },
+
+  async getChatSession(paperId: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('paper_id', paperId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async createChatSession(paperId: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .insert({
+        user_id: user.id,
+        paper_id: paperId,
+        messages: []
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateChatSession(sessionId: string, messages: any[]) {
+    const { error } = await supabase
+      .from('chat_sessions')
+      .update({ messages })
+      .eq('id', sessionId);
+
+    if (error) throw error;
+  },
+
+  async sendChatMessage(request: {
+    paperId: string
+    question: string
+    paperContent?: string
+    markingSchemeContent?: string
+  }) {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_BASE_URL}/exam-chat-ai`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(request)
+    });
+
+    return handleResponse(response);
+  },
+
+  async getPaperFileUrl(paperPath: string) {
+    const { data } = await supabase.storage
+      .from('exam-papers')
+      .createSignedUrl(paperPath, 3600);
+
+    return data?.signedUrl || null;
+  }
+};

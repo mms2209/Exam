@@ -122,6 +122,119 @@ export interface Database {
           created_at?: string
         }
       }
+      exam_subjects: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      exam_papers: {
+        Row: {
+          id: string
+          subject_id: string
+          year: number
+          paper_number: string
+          title: string | null
+          paper_file_url: string
+          marking_scheme_file_url: string
+          uploaded_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          subject_id: string
+          year: number
+          paper_number: string
+          title?: string | null
+          paper_file_url: string
+          marking_scheme_file_url: string
+          uploaded_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          subject_id?: string
+          year?: number
+          paper_number?: string
+          title?: string | null
+          paper_file_url?: string
+          marking_scheme_file_url?: string
+          uploaded_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      student_paper_interactions: {
+        Row: {
+          id: string
+          user_id: string
+          paper_id: string
+          last_accessed_at: string
+          access_count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          paper_id: string
+          last_accessed_at?: string
+          access_count?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          paper_id?: string
+          last_accessed_at?: string
+          access_count?: number
+          created_at?: string
+        }
+      }
+      chat_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          paper_id: string
+          messages: any
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          paper_id: string
+          messages?: any
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          paper_id?: string
+          messages?: any
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
